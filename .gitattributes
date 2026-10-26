@@ -1,0 +1,3 @@
+# Keep LF everywhere: setup.sh breaks with CRLF ("$'\r': command not found")
+* text=auto eol=lf
+*.sh text eol=lf

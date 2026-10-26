@@ -1,0 +1,12 @@
+soar.conf
+.env
+*.env
+authd.pass
+*.pass
+soar-windows-kit.zip
+windows-kit/
+tls/
+*.tar.gz
+precheck.json
+evidence/
+*.log

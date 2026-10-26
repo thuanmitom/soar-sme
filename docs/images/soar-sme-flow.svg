@@ -1,0 +1,143 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1420" width="1200" height="1420" font-family="Segoe UI, Helvetica, Arial, sans-serif">
+<title>SOAR-SME flow</title>
+<defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#475569"/></marker>
+<marker id="arrg" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#22c55e"/></marker></defs>
+<rect width="1200" height="1420" fill="#ffffff"/>
+<text x="600.0" y="40" font-size="22" font-weight="700" fill="#111827" text-anchor="middle">SOAR-SME — from a Windows event to a safe response</text>
+<text x="600.0" y="64" font-size="13" font-weight="400" fill="#4b5563" text-anchor="middle">One Ubuntu server · Wazuh 4.x detects · n8n decides · the dashboard backend acts within limits · people stay in control</text>
+<rect x="20" y="85" width="1160" height="140" rx="16" fill="#f1f5f9" stroke="#94a3b8" stroke-width="1"/>
+<text x="40" y="111" font-size="15" font-weight="700" fill="#334155" text-anchor="start">1  Windows endpoints</text>
+<rect x="60" y="125" width="330" height="82" rx="10" fill="#ffffff" stroke="#94a3b8" stroke-width="1.4"/>
+<text x="225.0" y="147" font-size="13.5" font-weight="700" fill="#334155" text-anchor="middle">Windows logs</text>
+<text x="225.0" y="166" font-size="12.5" font-weight="400" fill="#374151" text-anchor="middle">Security · Sysmon · PowerShell</text>
+<text x="225.0" y="183" font-size="12.5" font-weight="400" fill="#374151" text-anchor="middle">Microsoft Defender · Application</text>
+<rect x="435" y="125" width="330" height="82" rx="10" fill="#ffffff" stroke="#94a3b8" stroke-width="1.4"/>
+<text x="600.0" y="147" font-size="13.5" font-weight="700" fill="#334155" text-anchor="middle">Wazuh agent</text>
+<text x="600.0" y="166" font-size="12.5" font-weight="400" fill="#374151" text-anchor="middle">ships the logs over 1514/tcp</text>
+<text x="600.0" y="183" font-size="12.5" font-weight="400" fill="#374151" text-anchor="middle">enrolls with a password</text>
+<rect x="810" y="125" width="330" height="82" rx="10" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.4" stroke-dasharray="5 4"/>
+<text x="975.0" y="147" font-size="13.5" font-weight="700" fill="#334155" text-anchor="middle">Endpoint kit</text>
+<text x="975.0" y="166" font-size="12.5" font-weight="400" fill="#374151" text-anchor="middle">-Check first, then agent, Sysmon,</text>
+<text x="975.0" y="183" font-size="12.5" font-weight="400" fill="#374151" text-anchor="middle">response scripts (GPO / Intune / RMM)</text>
+<rect x="20" y="245" width="1160" height="150" rx="16" fill="#e7f7f5" stroke="#14b8a6" stroke-width="1"/>
+<text x="40" y="271" font-size="15" font-weight="700" fill="#0f766e" text-anchor="start">2  Wazuh 4.x manager — detection</text>
+<rect x="60" y="285" width="330" height="92" rx="10" fill="#ffffff" stroke="#14b8a6" stroke-width="1.4"/>
+<text x="225.0" y="307" font-size="13.5" font-weight="700" fill="#0f766e" text-anchor="middle">SOAR-SME rules (45)</text>
+<text x="225.0" y="326" font-size="12.5" font-weight="400" fill="#374151" text-anchor="middle">credential theft · ransomware precursors</text>
+<text x="225.0" y="343" font-size="12.5" font-weight="400" fill="#374151" text-anchor="middle">malicious documents · brute force</text>
+<text x="225.0" y="360" font-size="12.5" font-weight="400" fill="#374151" text-anchor="middle">persistence · defence evasion</text>
+<rect x="435" y="285" width="330" height="92" rx="10" fill="#ffffff" stroke="#14b8a6" stroke-width="1.4"/>
+<text x="600.0" y="307" font-size="13.5" font-weight="700" fill="#0f766e" text-anchor="middle">Alert</text>
+<text x="600.0" y="326" font-size="12.5" font-weight="400" fill="#374151" text-anchor="middle">SOAR rules from level 7</text>
+<text x="600.0" y="343" font-size="12.5" font-weight="400" fill="#374151" text-anchor="middle">built-in Wazuh alerts from level 12</text>
+<text x="600.0" y="360" font-size="12.5" font-weight="400" fill="#374151" text-anchor="middle">forwarded with a secret token</text>
+<rect x="810" y="285" width="330" height="92" rx="10" fill="#f6fdfc" stroke="#14b8a6" stroke-width="1.4" stroke-dasharray="5 4"/>
+<text x="975.0" y="307" font-size="13.5" font-weight="700" fill="#0f766e" text-anchor="middle">Indexer + Wazuh dashboard</text>
+<text x="975.0" y="326" font-size="12.5" font-weight="400" fill="#374151" text-anchor="middle">all alerts searchable</text>
+<text x="975.0" y="343" font-size="12.5" font-weight="400" fill="#374151" text-anchor="middle">retention set on the SOAR dashboard</text>
+<rect x="20" y="425" width="1160" height="300" rx="16" fill="#f4f0ff" stroke="#8b5cf6" stroke-width="1"/>
+<text x="40" y="451" font-size="15" font-weight="700" fill="#6d28d9" text-anchor="start">3  n8n triage — decides, never acts</text>
+<rect x="435" y="465" width="330" height="62" rx="10" fill="#ffffff" stroke="#8b5cf6" stroke-width="1.4"/>
+<text x="600.0" y="487" font-size="13.5" font-weight="700" fill="#6d28d9" text-anchor="middle">① Normalize + signature</text>
+<text x="600.0" y="506" font-size="12.5" font-weight="400" fill="#374151" text-anchor="middle">fields, indicators, behaviour fingerprint</text>
+<rect x="435" y="545" width="330" height="62" rx="10" fill="#ffffff" stroke="#8b5cf6" stroke-width="1.4"/>
+<text x="600.0" y="567" font-size="13.5" font-weight="700" fill="#6d28d9" text-anchor="middle">② Merge into a case</text>
+<text x="600.0" y="586" font-size="12.5" font-weight="400" fill="#374151" text-anchor="middle">same behaviour, same host, 30 minutes</text>
+<rect x="435" y="625" width="330" height="82" rx="10" fill="#ffffff" stroke="#8b5cf6" stroke-width="1.4"/>
+<text x="600.0" y="647" font-size="13.5" font-weight="700" fill="#6d28d9" text-anchor="middle">③ Verdict  →  ④ Risk + plan</text>
+<text x="600.0" y="666" font-size="12.5" font-weight="400" fill="#374151" text-anchor="middle">risk from verdict, level, threat intel</text>
+<text x="600.0" y="683" font-size="12.5" font-weight="400" fill="#374151" text-anchor="middle">host group mode: contain · notify · monitor</text>
+<rect x="60" y="465" width="330" height="160" rx="10" fill="#ffffff" stroke="#8b5cf6" stroke-width="1.4"/>
+<text x="225.0" y="487" font-size="13.5" font-weight="700" fill="#6d28d9" text-anchor="middle">Verdict, first match wins</text>
+<text x="225.0" y="506" font-size="12.5" font-weight="400" fill="#374151" text-anchor="middle">1. stored verdict (analyst beats AI)</text>
+<text x="225.0" y="523" font-size="12.5" font-weight="400" fill="#374151" text-anchor="middle">2. rule conclusive by itself</text>
+<text x="225.0" y="540" font-size="12.5" font-weight="400" fill="#374151" text-anchor="middle">3. AI — cloud mode only, masked data</text>
+<text x="225.0" y="557" font-size="12.5" font-weight="400" fill="#374151" text-anchor="middle">4. otherwise: needs review</text>
+<text x="225.0" y="574" font-size="12.5" font-weight="400" fill="#374151" text-anchor="middle"></text>
+<text x="225.0" y="591" font-size="12.5" font-weight="400" fill="#374151" text-anchor="middle">storm: AI and threat intel paused</text>
+<rect x="810" y="465" width="330" height="160" rx="10" fill="#fbf9ff" stroke="#8b5cf6" stroke-width="1.4" stroke-dasharray="5 4"/>
+<text x="975.0" y="487" font-size="13.5" font-weight="700" fill="#6d28d9" text-anchor="middle">Data mode</text>
+<text x="975.0" y="506" font-size="12.5" font-weight="400" fill="#374151" text-anchor="middle">LOCAL (default): nothing leaves</text>
+<text x="975.0" y="523" font-size="12.5" font-weight="400" fill="#374151" text-anchor="middle">the server</text>
+<text x="975.0" y="540" font-size="12.5" font-weight="400" fill="#374151" text-anchor="middle"></text>
+<text x="975.0" y="557" font-size="12.5" font-weight="400" fill="#374151" text-anchor="middle">CLOUD (opt-in): masked case data to</text>
+<text x="975.0" y="574" font-size="12.5" font-weight="400" fill="#374151" text-anchor="middle">VirusTotal · AbuseIPDB and</text>
+<text x="975.0" y="591" font-size="12.5" font-weight="400" fill="#374151" text-anchor="middle">Gemini · Claude · OpenAI-compatible</text>
+<rect x="20" y="755" width="1160" height="245" rx="16" fill="#fff7e8" stroke="#f59e0b" stroke-width="1"/>
+<text x="40" y="781" font-size="15" font-weight="700" fill="#b45309" text-anchor="start">4  Executor (dashboard backend) — enforces the limits</text>
+<rect x="300" y="795" width="500" height="62" rx="10" fill="#ffffff" stroke="#f59e0b" stroke-width="1.4"/>
+<text x="550.0" y="817" font-size="13.5" font-weight="700" fill="#b45309" text-anchor="middle">Safety checks</text>
+<text x="550.0" y="836" font-size="12.5" font-weight="400" fill="#374151" text-anchor="middle">exceptions · pause switch · rate limits · allowlist</text>
+<text x="1140" y="817" font-size="11.5" font-weight="600" fill="#b45309" text-anchor="end">outbreak: 5 hosts in 30 min → one incident</text>
+<text x="1140" y="836" font-size="11.5" font-weight="600" fill="#b45309" text-anchor="end">storm: 30 cases in 5 min → one digest</text>
+<rect x="60" y="885" width="500" height="92" rx="10" fill="#ffffff" stroke="#f59e0b" stroke-width="1.4"/>
+<text x="310.0" y="907" font-size="13.5" font-weight="700" fill="#b45309" text-anchor="middle">Automatic</text>
+<text x="310.0" y="926" font-size="12.5" font-weight="400" fill="#374151" text-anchor="middle">popup · light evidence · Defender scan</text>
+<text x="310.0" y="943" font-size="12.5" font-weight="400" fill="#374151" text-anchor="middle">kill only in auto-kill groups and only for</text>
+<text x="310.0" y="960" font-size="12.5" font-weight="400" fill="#374151" text-anchor="middle">high-fidelity cases (rate limited)</text>
+<rect x="640" y="885" width="500" height="92" rx="10" fill="#ffffff" stroke="#f59e0b" stroke-width="1.4"/>
+<text x="890.0" y="907" font-size="13.5" font-weight="700" fill="#b45309" text-anchor="middle">Approval needed</text>
+<text x="890.0" y="926" font-size="12.5" font-weight="400" fill="#374151" text-anchor="middle">kill (and isolation, if enabled)</text>
+<text x="890.0" y="943" font-size="12.5" font-weight="400" fill="#374151" text-anchor="middle">Approve / Reject on the dashboard or in Telegram</text>
+<text x="890.0" y="960" font-size="12.5" font-weight="400" fill="#374151" text-anchor="middle">no decision in 30 min: expires, nothing is done</text>
+<rect x="20" y="1020" width="1160" height="165" rx="16" fill="#fdeeee" stroke="#ef4444" stroke-width="1"/>
+<text x="40" y="1046" font-size="15" font-weight="700" fill="#b91c1c" text-anchor="start">5  Response on the endpoint (Wazuh active response)</text>
+<rect x="60" y="1060" width="330" height="105" rx="10" fill="#ffffff" stroke="#ef4444" stroke-width="1.4"/>
+<text x="225.0" y="1082" font-size="13.5" font-weight="700" fill="#b91c1c" text-anchor="middle">Actions</text>
+<text x="225.0" y="1101" font-size="12.5" font-weight="400" fill="#374151" text-anchor="middle">popup · Defender scan · evidence</text>
+<text x="225.0" y="1118" font-size="12.5" font-weight="400" fill="#374151" text-anchor="middle">kill process tree · suspend / resume</text>
+<text x="225.0" y="1135" font-size="12.5" font-weight="400" fill="#374151" text-anchor="middle">block IP (expires) · isolate</text>
+<text x="225.0" y="1152" font-size="12.5" font-weight="400" fill="#374151" text-anchor="middle">(approval only, lifted automatically)</text>
+<rect x="435" y="1060" width="330" height="105" rx="10" fill="#ffffff" stroke="#ef4444" stroke-width="1.4"/>
+<text x="600.0" y="1082" font-size="13.5" font-weight="700" fill="#b91c1c" text-anchor="middle">soar-action.ps1</text>
+<text x="600.0" y="1101" font-size="12.5" font-weight="400" fill="#374151" text-anchor="middle">re-checks the process before acting</text>
+<text x="600.0" y="1118" font-size="12.5" font-weight="400" fill="#374151" text-anchor="middle">never touches Windows core, Defender,</text>
+<text x="600.0" y="1135" font-size="12.5" font-weight="400" fill="#374151" text-anchor="middle">Sysmon, Wazuh or EDR processes</text>
+<text x="600.0" y="1152" font-size="12.5" font-weight="400" fill="#374151" text-anchor="middle">(path and signature checked)</text>
+<rect x="810" y="1060" width="330" height="105" rx="10" fill="#ffffff" stroke="#ef4444" stroke-width="1.4"/>
+<text x="975.0" y="1082" font-size="13.5" font-weight="700" fill="#b91c1c" text-anchor="middle">Result reported back</text>
+<text x="975.0" y="1101" font-size="12.5" font-weight="400" fill="#374151" text-anchor="middle">one JSON line → rule 100195</text>
+<text x="975.0" y="1118" font-size="12.5" font-weight="400" fill="#374151" text-anchor="middle">→ action updated on the case</text>
+<text x="975.0" y="1135" font-size="12.5" font-weight="400" fill="#374151" text-anchor="middle">→ message sent</text>
+<rect x="20" y="1205" width="1160" height="170" rx="16" fill="#ebf8ef" stroke="#22c55e" stroke-width="1"/>
+<text x="40" y="1231" font-size="15" font-weight="700" fill="#15803d" text-anchor="start">6  People</text>
+<rect x="60" y="1245" width="330" height="92" rx="10" fill="#ffffff" stroke="#22c55e" stroke-width="1.4"/>
+<text x="225.0" y="1267" font-size="13.5" font-weight="700" fill="#15803d" text-anchor="middle">Analysts on the dashboard</text>
+<text x="225.0" y="1286" font-size="12.5" font-weight="400" fill="#374151" text-anchor="middle">cases · approvals · incidents · hosts</text>
+<text x="225.0" y="1303" font-size="12.5" font-weight="400" fill="#374151" text-anchor="middle">knowledge · exceptions · audit log</text>
+<text x="225.0" y="1320" font-size="12.5" font-weight="400" fill="#374151" text-anchor="middle">roles viewer / analyst / admin, 2FA</text>
+<rect x="435" y="1245" width="330" height="92" rx="10" fill="#ffffff" stroke="#22c55e" stroke-width="1.4"/>
+<text x="600.0" y="1267" font-size="13.5" font-weight="700" fill="#15803d" text-anchor="middle">Feedback</text>
+<text x="600.0" y="1286" font-size="12.5" font-weight="400" fill="#374151" text-anchor="middle">your TP / FP verdict is reused for</text>
+<text x="600.0" y="1303" font-size="12.5" font-weight="400" fill="#374151" text-anchor="middle">the same behaviour (no AI, no TI)</text>
+<text x="600.0" y="1320" font-size="12.5" font-weight="400" fill="#374151" text-anchor="middle">AI 30 days · analyst 90 days</text>
+<rect x="810" y="1245" width="330" height="92" rx="10" fill="#ffffff" stroke="#22c55e" stroke-width="1.4"/>
+<text x="975.0" y="1267" font-size="13.5" font-weight="700" fill="#15803d" text-anchor="middle">Notifications</text>
+<text x="975.0" y="1286" font-size="12.5" font-weight="400" fill="#374151" text-anchor="middle">Telegram: Approve / Reject buttons</text>
+<text x="975.0" y="1303" font-size="12.5" font-weight="400" fill="#374151" text-anchor="middle">Teams · Slack · Discord: messages</text>
+<text x="975.0" y="1320" font-size="12.5" font-weight="400" fill="#374151" text-anchor="middle">with a link to the dashboard</text>
+<text x="600.0" y="1402" font-size="12.5" font-weight="600" fill="#374151" text-anchor="middle">The AI only gives a verdict. A fixed policy decides the plan; the executor acts within your limits and records everything.</text>
+<line x1="390" y1="166" x2="431" y2="166" stroke="#475569" stroke-width="2" marker-end="url(#arr)"/>
+<line x1="600" y1="207" x2="600" y2="281" stroke="#475569" stroke-width="2" marker-end="url(#arr)"/>
+<line x1="390" y1="331" x2="431" y2="331" stroke="#475569" stroke-width="2" marker-end="url(#arr)"/>
+<line x1="765" y1="331" x2="806" y2="331" stroke="#475569" stroke-width="2" marker-end="url(#arr)"/>
+<line x1="600" y1="377" x2="600" y2="461" stroke="#475569" stroke-width="2" marker-end="url(#arr)"/>
+<line x1="600" y1="527" x2="600" y2="541" stroke="#475569" stroke-width="2" marker-end="url(#arr)"/>
+<line x1="600" y1="607" x2="600" y2="621" stroke="#475569" stroke-width="2" marker-end="url(#arr)"/>
+<line x1="433" y1="576" x2="394" y2="576" stroke="#475569" stroke-width="2" marker-end="url(#arr)"/>
+<line x1="767" y1="576" x2="806" y2="576" stroke="#8b5cf6" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#arr)"/>
+<line x1="600" y1="707" x2="600" y2="791" stroke="#475569" stroke-width="2" marker-end="url(#arr)"/>
+<line x1="480" y1="857" x2="360" y2="881" stroke="#475569" stroke-width="2" marker-end="url(#arr)"/>
+<line x1="620" y1="857" x2="760" y2="881" stroke="#475569" stroke-width="2" marker-end="url(#arr)"/>
+<line x1="310" y1="977" x2="560" y2="1056" stroke="#475569" stroke-width="2" marker-end="url(#arr)"/>
+<line x1="890" y1="977" x2="640" y2="1056" stroke="#475569" stroke-width="2" marker-end="url(#arr)"/>
+<text x="780" y="1012" font-size="11.5" font-weight="600" fill="#b45309" text-anchor="start">approved</text>
+<line x1="392" y1="1112" x2="431" y2="1112" stroke="#94a3b8" stroke-width="2" marker-end="url(#arr)"/>
+<line x1="765" y1="1112" x2="806" y2="1112" stroke="#475569" stroke-width="2" marker-end="url(#arr)"/>
+<line x1="975" y1="1165" x2="975" y2="1241" stroke="#475569" stroke-width="2" marker-end="url(#arr)"/>
+<line x1="392" y1="1291" x2="431" y2="1291" stroke="#475569" stroke-width="2" marker-end="url(#arr)"/>
+<path d="M 1140 1291 L 1176 1291 L 1176 931 L 1144 931" fill="none" stroke="#22c55e" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#arrg)"/>
+<text x="1170" y="1230" font-size="11.5" font-weight="600" fill="#15803d" text-anchor="end">approve / reject</text>
+<path d="M 600 1337 L 600 1360 L 32 1360 L 32 545 L 56 545" fill="none" stroke="#22c55e" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#arrg)"/>
+<text x="40" y="1352" font-size="11.5" font-weight="600" fill="#15803d" text-anchor="start">verdict reused (knowledge)</text>
+</svg>

