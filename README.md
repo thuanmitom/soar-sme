@@ -22,6 +22,10 @@ The dashboard with sample data:
 | --- | --- |
 | ![Agent groups](docs/images/dashboard-groups.png) | ![Endpoint popup](docs/images/endpoint-popup.png) |
 
+| Telegram notifications (`lab.soar.bot`; test lab in the users' language) |
+| --- |
+| <img src="docs/images/telegram-notify.png" alt="Telegram notifications" width="360"> |
+
 Try the dashboard without installing anything: download [docs/demo/dashboard-demo.html](docs/demo/dashboard-demo.html) and open it
 in a browser (sample data; nothing is saved or sent).
 
